@@ -21,13 +21,14 @@ S10: No acoplar casos de uso a implementaciones de modelos de IA; los casos de u
 
 ## Tasks
 
-T1 — Base de datos y sesión SQLAlchemy + configuración Alembic. Route: inline (foundation, pequeña y entendida). Linked: S1, S4. Status: done.
-T2 — Entidades de dominio (modelos SQLAlchemy), un archivo por entidad. Route: delegated (parallelism, superficies disjuntas). Linked: S2, S3, S4. Status: in-progress (6 writers en paralelo).
-T3 — Migración Alembic inicial (crea tablas de S2). Route: inline (depende de T2). Linked: S5. Status: done.
-T4 — Repositorios por entidad (CRUD base). Route: delegated (parallelism, superficies disjuntas). Linked: S6. Status: done.
-T5 — Casos de uso base (proyecto, página). Route: delegated (parallelism, superficies disjuntas). Linked: S7, S8. Status: done.
-T6 — Pruebas de unidad para repositorios y casos de uso. Route: inline (RED → GREEN → refactor). Linked: S9. Status: pending.
+T1 — Base de datos y sesión SQLAlchemy + configuración Alembic. Route: inline (foundation). Linked: S1, S4. Status: done. Commit: 7d8c7be.
+T2 — Entidades de dominio (modelos SQLAlchemy), un archivo por entidad. Route: delegated (parallelism, superficies disjuntas). Linked: S2, S3, S4. Status: done. Commit: c7e1c2c.
+T3 — Migración Alembic inicial (crea tablas de S2). Route: inline (depende de T2). Linked: S5. Status: done. Commit: 7d8c7be.
+T4 — Repositorios por entidad (CRUD base). Route: delegated (parallelism, superficies disjuntas). Linked: S6. Status: done. Commit: 93260ef.
+T5 — Casos de uso base (proyecto, página). Route: delegated (parallelism, superficies disjuntas). Linked: S7, S8. Status: done. Commit: d53c986.
+T6 — Pruebas de unidad para repositorios y casos de uso. Route: inline (RED → GREEN → refactor). Linked: S9. Status: done. Commit: 2dddb94.
 
 ## Log
 
 L1: "Hazlo" (usuario, 15-nov-2026) — iniciar P1 backend, dominio y persistencia
+L2: P1 completado: 5 work-unit commits (7d8c7be T1-T3, 93260ef T4, d53c986 T5, c7e1c2c T2, 2dddb94 T6). 27/27 pruebas pasando. Todos los specs S1-S10 cubiertos. (15-nov-2026)
