@@ -1,0 +1,129 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  PYTHON_VERSION: "3.11"
+  NODE_VERSION: "20"
+
+jobs:
+  # 1. Backend: lint, type-check y tests
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          pip install -e .[dev]
+      - name: Lint with ruff
+        run: cd backend && ruff check
+      - name: Format check with ruff
+        run: cd backend && ruff format --check
+      - name: Type-check with mypy
+        run: cd backend && mypy
+      - name: Run backend tests
+        run: cd backend && pytest
+
+  # 2. Frontend: type-check y tests
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Install frontend dependencies
+        run: cd frontend && npm ci
+      - name: Type-check with tsc
+        run: cd frontend && npm run typecheck
+      - name: Run frontend tests
+        run: cd frontend && npm test
+
+  # 3. Infra: validar Docker Compose
+  docker-compose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Docker Compose
+        run: docker compose -f docker/docker-compose.yml --env-file docker/.env.example config
+
+  # 4. Seguridad estática: CodeQL (reemplaza a SonarCloud)
+  codeql:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: python, javascript
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+  # 5. SCA de dependencias: OWASP Dependency-Check
+  dependency-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Java
+        run: sudo apt-get update && sudo apt-get install -y openjdk-17-jre-headless
+      - name: Install OWASP Dependency-Check
+        run: |
+          curl -sL https://github.com/jeremylong/DependencyCheck/releases/download/v7.0.3/dependency-check-7.0.3-release.zip -o dependency-check.zip
+          unzip -q dependency-check.zip
+          chmod +x dependency-check/bin/dependency-check.sh
+      - name: Scan backend dependencies
+        run: ./dependency-check/bin/dependency-check.sh --scan backend/ --format JSON --out backend-dependency-check-report.json --project "Manga Colorizer Backend"
+      - name: Scan frontend dependencies
+        run: ./dependency-check/bin/dependency-check.sh --scan frontend/ --format JSON --out frontend-dependency-check-report.json --project "Manga Colorizer Frontend"
+      - name: Upload reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-reports
+          path: |
+            backend-dependency-check-report.json
+            frontend-dependency-check-report.json
+
+  # 6. Imágenes Docker: Trivy (opcional, solo en push)
+  trivy:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Trivy filesystem scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+
+  # 7. DAST: OWASP ZAP (opcional, desactivado por defecto)
+  # Requiere levantar los servicios de Docker Compose antes de escanear.
+  # Descomentar y configurar cuando se necesite pruebas de seguridad en ejecución.
+  #
+  # zap-baseline:
+  #   runs-on: ubuntu-latest
+  #   if: github.event_name == 'push'
+  #   needs: docker-compose
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: ZAP Baseline Scan
+  #       uses: zaproxy/action-baseline@v0.7.0
+  #       with:
+  #         target: 'http://localhost:8000'

@@ -29,3 +29,4 @@ T5 — Revisión final de Definition of Done global. Route: inline. Linked: S1-S
 ## Log
 
 L1: "continua hasta el final" (usuario, 15-nov-2026) — ejecutar P3-P9 sin confirmación humana
+L2: CI/CD agregado: .github/workflows/ci.yml con CodeQL (seguridad estática), OWASP Dependency-Check (SCA de dependencias), Trivy (imágenes Docker, solo push), y ZAP como DAST opcional comentado.
