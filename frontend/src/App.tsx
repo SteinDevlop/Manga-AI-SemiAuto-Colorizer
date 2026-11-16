@@ -10,7 +10,7 @@ import Analysis from "./pages/Analysis";
 import Masks from "./pages/Masks";
 import Editor from "./pages/Editor";
 import Review from "./pages/Review";
-import { Colorize } from "./pages/Colorize";
+import Colorize from "./pages/Colorize";
 import { History } from "./pages/History";
 
 export default function App() {

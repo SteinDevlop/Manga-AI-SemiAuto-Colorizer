@@ -1,34 +1,11 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { Colorize } from "../pages/Colorize";
-import { MemoryRouter } from "react-router-dom";
-import { api } from "../api/client";
-
-vi.mock("../api/client", () => ({
-  api: {
-    get: vi.fn(),
-    post: vi.fn(),
-  },
-}));
+import Colorize from "../pages/Colorize";
 
 describe("Colorize", () => {
-  it("muestra estado pendiente antes de iniciar", async () => {
-    vi.mocked(api.get).mockResolvedValueOnce({
-      id: "analysis-1",
-      estado: "APPROVED",
-    });
-    vi.mocked(api.post).mockResolvedValueOnce({
-      id: "job-1",
-      estado: "pending",
-      progreso: 0,
-    });
-
-    render(
-      <MemoryRouter initialEntries={["/colorize/analysis-1"]}>
-        <Colorize />
-      </MemoryRouter>
-    );
-
-    expect(screen.getByText("Loading...")).toBeInTheDocument();
+  it("shows colorization center with start button", () => {
+    render(<Colorize />);
+    expect(screen.getByText("Colorization Center")).toBeInTheDocument();
+    expect(screen.getByText("Start Colorization Job")).toBeInTheDocument();
   });
 });
