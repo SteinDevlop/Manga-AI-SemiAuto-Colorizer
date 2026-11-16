@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
-import { Projects } from "./pages/Projects";
+import Projects from "./pages/Projects";
 import { Upload } from "./pages/Upload";
 import { Analysis } from "./pages/Analysis";
 import { Editor } from "./pages/Editor";
