@@ -127,7 +127,7 @@ export function Upload() {
               disabled={uploading}
             />
             {validationError && <div className="alert alert-error">{validationError}</div>}
-            {preview && (
+            {preview && preview.startsWith("blob:") && (
               <div className="preview">
                 <img src={preview} alt="Selected image preview" />
               </div>
