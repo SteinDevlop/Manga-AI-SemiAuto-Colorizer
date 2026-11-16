@@ -19,3 +19,21 @@ celery_app.conf.result_serializer = "json"
 celery_app.conf.accept_content = ["json"]
 celery_app.conf.timezone = "UTC"
 celery_app.conf.enable_utc = True
+
+# Fiabilidad y idempotencia de tareas (ADR-002).
+celery_app.conf.task_acks_late = True
+celery_app.conf.worker_prefetch_multiplier = 1
+celery_app.conf.task_reject_on_worker_lost = True
+celery_app.conf.task_default_retry_delay = 30
+celery_app.conf.task_max_retries = 3
+celery_app.conf.result_expires = 86400  # 24 h
+
+# Rutas de tareas a colas dedicadas (CPU vs GPU).
+celery_app.conf.task_routes = {
+    "app.workers.tasks.analyze_page": {"queue": "WORKER_CPU_QUEUES"},
+    "app.workers.tasks.colorize_page": {"queue": "WORKER_GPU_QUEUES"},
+}
+
+# Colas por defecto de workers (sobrescritas por variables de entorno).
+celery_app.conf.worker_cpu_queues = "WORKER_CPU_QUEUES"
+celery_app.conf.worker_gpu_queues = "WORKER_GPU_QUEUES"
