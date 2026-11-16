@@ -11,9 +11,8 @@ import uuid
 from typing import Any
 
 import sqlalchemy as sa
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.modules.assets.models import Artifact
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class ArtifactRepository:

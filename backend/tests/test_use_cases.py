@@ -4,13 +4,13 @@ Verifies that use case classes import correctly, expose the expected
 execute methods, and reuse the P0 error envelope.
 """
 
-from app.core.exceptions import NotFoundError, ConflictError, ValidationError
-from app.application.use_cases.create_project import CreateProjectUseCase
-from app.application.use_cases.get_project import GetProjectUseCase
-from app.application.use_cases.list_projects import ListProjectsUseCase
 from app.application.use_cases.create_page import CreatePageUseCase
+from app.application.use_cases.create_project import CreateProjectUseCase
 from app.application.use_cases.get_page import GetPageUseCase
+from app.application.use_cases.get_project import GetProjectUseCase
 from app.application.use_cases.list_pages import ListPagesUseCase
+from app.application.use_cases.list_projects import ListProjectsUseCase
+from app.core.exceptions import ConflictError, NotFoundError, ValidationError
 
 
 def test_error_envelope_matches_p0_contract():

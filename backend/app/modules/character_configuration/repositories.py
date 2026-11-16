@@ -9,13 +9,12 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import Select, select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.modules.character_configuration.models import (
     CharacterAttribute,
     CharacterPalette,
 )
+from sqlalchemy import Select, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class CharacterAttributeRepository:

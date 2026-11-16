@@ -9,7 +9,7 @@ Depends on repository and storage ports, never on concrete ORM models.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import Protocol
 
 from app.core.exceptions import NotFoundError
 

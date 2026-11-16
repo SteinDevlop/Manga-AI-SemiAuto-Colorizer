@@ -7,13 +7,12 @@ para inyección en rutas y casos de uso. La URL de conexión proviene de
 
 from collections.abc import AsyncGenerator
 
+from app.core.config import get_settings
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
-
-from app.core.config import get_settings
 
 settings = get_settings()
 

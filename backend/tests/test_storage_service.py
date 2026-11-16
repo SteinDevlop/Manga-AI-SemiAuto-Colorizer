@@ -9,7 +9,6 @@ import tempfile
 from pathlib import Path
 
 import pytest
-
 from app.infrastructure.storage.service import StorageService
 
 

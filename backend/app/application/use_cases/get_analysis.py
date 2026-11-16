@@ -8,7 +8,7 @@ never on concrete ORM models.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import Protocol
 from uuid import UUID
 
 from app.core.exceptions import NotFoundError

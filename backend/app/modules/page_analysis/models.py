@@ -5,14 +5,12 @@ their relationships to ``Page``. This module contains data models only; no
 computer vision logic is implemented here.
 """
 
+import uuid
 from typing import TYPE_CHECKING
 
-import uuid
-
+from app.infrastructure.database.base import Base
 from sqlalchemy import Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
-from app.infrastructure.database.base import Base
 
 if TYPE_CHECKING:
     from app.modules.projects.models import Page

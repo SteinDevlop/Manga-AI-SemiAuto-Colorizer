@@ -7,10 +7,9 @@ official colors are invented here.
 
 import uuid
 
+from app.infrastructure.database.base import Base
 from sqlalchemy import Boolean, Float, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
-from app.infrastructure.database.base import Base
 
 
 class CharacterAttribute(Base):

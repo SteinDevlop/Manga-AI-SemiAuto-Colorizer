@@ -6,12 +6,11 @@ adapters still work as fallback.
 """
 
 import pytest
-
 from app.ai_engine.adapters.real import (
     ModelUnavailableError,
     RealCharacterDetector,
-    RealColorizationEngine,
     RealCharacterMatcher,
+    RealColorizationEngine,
     RealPanelDetector,
     RealSegmenter,
 )

@@ -23,13 +23,12 @@ import time
 from datetime import datetime, timezone
 from typing import Any
 
-from celery import Task
-
 from app.core.exceptions import AppError, ConflictError, InternalError, NotFoundError
 from app.infrastructure.database.session import async_session_factory as async_session
 from app.modules.colorization.repositories import ColorizationJobRepository
 from app.modules.colorization.states import is_terminal, is_valid_transition
 from app.workers.celery_app import celery_app
+from celery import Task
 
 #: Simulated per-stage durations (seconds) for analyze_page.
 ANALYZE_STAGES: list[tuple[str, int, str]] = [

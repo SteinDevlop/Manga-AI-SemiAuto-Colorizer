@@ -1,8 +1,7 @@
 """App base de Celery para workers."""
 
-from celery import Celery
-
 from app.core.config import get_settings
+from celery import Celery
 
 settings = get_settings()
 

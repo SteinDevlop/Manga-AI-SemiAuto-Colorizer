@@ -9,10 +9,9 @@ binary image content.
 import uuid
 from typing import Optional
 
-from sqlalchemy import ForeignKey, Integer, JSON, String
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-
 from app.infrastructure.database.base import Base
+from sqlalchemy import JSON, ForeignKey, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
 class MaskArtifact(Base):

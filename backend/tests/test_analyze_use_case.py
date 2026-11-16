@@ -8,16 +8,13 @@ import asyncio
 import inspect
 import uuid
 from dataclasses import FrozenInstanceError, dataclass
-from typing import Any
 
 import pytest
-
 from app.ai_engine.contracts import CharacterDetector, PanelDetector, Segmenter
 from app.application.use_cases.analyze_page import (
     AnalyzePageInput,
     AnalyzePageOutput,
     AnalyzePageUseCase,
-    CharacterAppearanceOutput,
     CharacterOutput,
     MaskArtifactOutput,
     PanelOutput,

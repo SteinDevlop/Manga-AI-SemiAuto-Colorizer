@@ -9,10 +9,9 @@ from __future__ import annotations
 
 import uuid
 
+from app.infrastructure.database.base import Base
 from sqlalchemy import BigInteger, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
-from app.infrastructure.database.base import Base
 
 
 class Artifact(Base):

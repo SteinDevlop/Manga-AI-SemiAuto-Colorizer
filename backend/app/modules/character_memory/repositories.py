@@ -9,10 +9,9 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
+from app.modules.character_memory.models import CharacterMemory, ModelManifest
 from sqlalchemy import Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.modules.character_memory.models import CharacterMemory, ModelManifest
 
 
 class CharacterMemoryRepository:

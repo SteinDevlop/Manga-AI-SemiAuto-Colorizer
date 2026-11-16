@@ -11,10 +11,9 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
+from app.modules.colorization.models import ColorizationJob, MaskArtifact
 from sqlalchemy import Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.modules.colorization.models import ColorizationJob, MaskArtifact
 
 
 class MaskArtifactRepository:

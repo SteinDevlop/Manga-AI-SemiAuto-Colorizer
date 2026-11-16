@@ -4,28 +4,26 @@ Verifies that each repository class exposes the expected CRUD methods.
 No database connection required — only class introspection.
 """
 
-import inspect
 
-from app.modules.projects.repositories import ProjectRepository
-from app.modules.page_analysis.repositories import (
-    PageRepository,
-    PanelRepository,
-    AnalysisRepository,
-)
 from app.modules.character_analysis.repositories import (
-    CharacterRepository,
     CharacterAppearanceRepository,
+    CharacterRepository,
 )
 from app.modules.character_configuration.repositories import (
     CharacterAttributeRepository,
     CharacterPaletteRepository,
 )
-from app.modules.colorization.repositories import (
-    MaskArtifactRepository,
-    ColorizationJobRepository,
-)
 from app.modules.character_memory.repositories import ModelManifestRepository
-
+from app.modules.colorization.repositories import (
+    ColorizationJobRepository,
+    MaskArtifactRepository,
+)
+from app.modules.page_analysis.repositories import (
+    AnalysisRepository,
+    PageRepository,
+    PanelRepository,
+)
+from app.modules.projects.repositories import ProjectRepository
 
 EXPECTED_METHODS = {"get", "list", "create", "update", "delete", "exists"}
 

@@ -11,8 +11,6 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from sqlalchemy import select, update
-
 from app.infrastructure.database.session import async_session_factory
 from app.modules.colorization.models import ColorizationJob
 from app.modules.colorization.states import (
@@ -20,6 +18,7 @@ from app.modules.colorization.states import (
     ALLOWED_TRANSITIONS,
     is_terminal,
 )
+from sqlalchemy import select
 
 #: Tiempo máximo permitido en estados activos antes de considerar el
 #: trabajo como abandonado (para reintento o marcado como failed).

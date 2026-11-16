@@ -5,10 +5,8 @@ expected tables, columns, foreign keys, and indexes. No database
 connection is required — only mapper introspection.
 """
 
-import pytest
-from sqlalchemy import inspect
-
 from app.infrastructure.database.base import Base
+from sqlalchemy import inspect
 
 
 def test_base_metadata_registers_all_tables():
@@ -99,15 +97,15 @@ def test_mask_artifact_no_binary_in_postgres():
 
 def test_all_models_inherit_common_columns():
     """Every model must inherit id, created_at, updated_at from Base."""
-    from app.modules.projects.models import Project, Page
-    from app.modules.page_analysis.models import Panel, Analysis
     from app.modules.character_analysis.models import Character, CharacterAppearance
     from app.modules.character_configuration.models import (
         CharacterAttribute,
         CharacterPalette,
     )
-    from app.modules.colorization.models import MaskArtifact, ColorizationJob
     from app.modules.character_memory.models import ModelManifest
+    from app.modules.colorization.models import ColorizationJob, MaskArtifact
+    from app.modules.page_analysis.models import Analysis, Panel
+    from app.modules.projects.models import Page, Project
 
     models = [
         Project, Page, Panel, Analysis, Character, CharacterAppearance,

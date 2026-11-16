@@ -5,13 +5,12 @@ repositories (no database required).
 """
 
 import asyncio
+import hashlib
 import uuid
 from dataclasses import FrozenInstanceError, dataclass
 from typing import Any
-import hashlib
 
 import pytest
-
 from app.application.use_cases.correct_mask import (
     CorrectMaskInput,
     CorrectMaskUseCase,

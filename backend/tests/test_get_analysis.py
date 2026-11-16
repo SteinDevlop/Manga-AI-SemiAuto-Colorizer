@@ -6,10 +6,9 @@ Verifies structure, DTOs, and protocol dependencies.
 import asyncio
 import inspect
 import uuid
-from dataclasses import FrozenInstanceError, dataclass
+from dataclasses import FrozenInstanceError
 
 import pytest
-
 from app.application.use_cases.get_analysis import (
     GetAnalysisInput,
     GetAnalysisOutput,

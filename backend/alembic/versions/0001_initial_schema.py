@@ -9,8 +9,8 @@ character_appearances, character_attributes, character_palettes,
 mask_artifacts, colorization_jobs, model_manifests.
 """
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.

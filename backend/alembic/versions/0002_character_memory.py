@@ -5,8 +5,8 @@ Revises: 0001_initial_schema
 Create Date: 2026-11-15
 """
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.

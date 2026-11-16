@@ -11,7 +11,6 @@ from dataclasses import FrozenInstanceError, dataclass
 from typing import Any
 
 import pytest
-
 from app.application.use_cases.add_character_reference import (
     AddCharacterReferenceInput,
     AddCharacterReferenceUseCase,

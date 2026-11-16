@@ -6,14 +6,11 @@ GetModelUseCase with stub protocol repositories (no database required).
 
 import asyncio
 import uuid
-from dataclasses import FrozenInstanceError, dataclass
+from dataclasses import FrozenInstanceError, dataclass, field
+from datetime import datetime, timezone
 from typing import Any
 
 import pytest
-
-from app.application.use_cases.add_character_reference import (
-    AddCharacterReferenceInput,
-)
 from app.application.use_cases.get_model import GetModelInput, GetModelUseCase
 from app.application.use_cases.list_models import ListModelsInput, ListModelsUseCase
 from app.application.use_cases.register_model import (
@@ -25,10 +22,6 @@ from app.application.use_cases.update_model_status import (
     UpdateModelStatusUseCase,
 )
 from app.core.exceptions import ConflictError, NotFoundError, ValidationError
-
-
-from datetime import datetime, timezone
-from dataclasses import field
 
 
 @dataclass

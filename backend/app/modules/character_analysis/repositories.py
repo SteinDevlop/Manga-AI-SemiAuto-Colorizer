@@ -11,10 +11,9 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
+from app.modules.character_analysis.models import Character, CharacterAppearance
 from sqlalchemy import Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.modules.character_analysis.models import Character, CharacterAppearance
 
 
 class CharacterRepository:

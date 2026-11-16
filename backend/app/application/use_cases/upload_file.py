@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
 
-from app.core.exceptions import ConflictError, ValidationError
+from app.core.exceptions import ConflictError
 
 
 class ArtifactRepository(Protocol):

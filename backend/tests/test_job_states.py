@@ -4,11 +4,10 @@ Verifies state machine transitions for colorization jobs. No database
 required — only pure functions from app.modules.colorization.states.
 """
 
-import pytest
 
 from app.modules.colorization.states import (
-    ALLOWED_TRANSITIONS,
     ACTIVE_STATES,
+    ALLOWED_TRANSITIONS,
     JOB_STATES,
     TERMINAL_STATES,
     is_active,

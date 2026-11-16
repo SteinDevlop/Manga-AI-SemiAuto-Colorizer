@@ -10,11 +10,10 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import Select, select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.modules.page_analysis.models import Analysis, Panel
 from app.modules.projects.models import Page
+from sqlalchemy import Select, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class PageRepository:

@@ -14,7 +14,6 @@ from uuid import UUID
 
 from app.core.exceptions import NotFoundError, ValidationError
 
-
 VALID_MODEL_STATES = frozenset({"disponible", "experimental", "deshabilitado"})
 
 

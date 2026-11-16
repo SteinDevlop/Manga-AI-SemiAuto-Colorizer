@@ -11,7 +11,6 @@ from __future__ import annotations
 
 from typing import TypedDict
 
-from app.ai_engine.contracts import Segmenter
 from . import ModelUnavailableError
 
 

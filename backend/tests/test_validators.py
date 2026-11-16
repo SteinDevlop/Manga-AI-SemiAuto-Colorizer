@@ -8,12 +8,11 @@ import tempfile
 from pathlib import Path
 
 import pytest
-
 from app.modules.assets.validators import (
+    generate_safe_internal_name,
     validate_content_matches_extension,
     validate_dimensions,
     validate_file_size,
-    generate_safe_internal_name,
     validate_mime_type,
 )
 

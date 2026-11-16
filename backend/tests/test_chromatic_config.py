@@ -10,7 +10,6 @@ from dataclasses import FrozenInstanceError, dataclass
 from typing import Any
 
 import pytest
-
 from app.application.use_cases.approve_character_attribute import (
     ApproveCharacterAttributeInput,
     ApproveCharacterAttributeUseCase,

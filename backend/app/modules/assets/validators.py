@@ -15,7 +15,7 @@ import logging
 import mimetypes
 import uuid
 from pathlib import Path
-from typing import Any, Final
+from typing import Final
 
 from app.core.exceptions import ValidationError
 
