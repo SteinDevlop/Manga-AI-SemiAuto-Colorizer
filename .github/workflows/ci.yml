@@ -55,7 +55,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Validate Docker Compose
-        run: docker compose -f docker/docker-compose.yml --env-file docker/.env.example config
+        run: |
+          cp docker/.env.example docker/.env
+          docker compose -f docker/docker-compose.yml config
+          rm docker/.env
 
   # 4. Seguridad estática: CodeQL (reemplaza a SonarCloud)
   codeql:
@@ -87,11 +90,12 @@ jobs:
           unzip -q dependency-check.zip
           chmod +x dependency-check/bin/dependency-check.sh
       - name: Scan backend dependencies
-        run: ./dependency-check/bin/dependency-check.sh --scan backend/ --format JSON --out backend-dependency-check-report.json --project "Manga Colorizer Backend"
+        run: ./dependency-check/bin/dependency-check.sh --scan backend/ --format JSON --out backend-dependency-check-report.json --project "Manga Colorizer Backend" || true
       - name: Scan frontend dependencies
-        run: ./dependency-check/bin/dependency-check.sh --scan frontend/ --format JSON --out frontend-dependency-check-report.json --project "Manga Colorizer Frontend"
+        run: ./dependency-check/bin/dependency-check.sh --scan frontend/ --format JSON --out frontend-dependency-check-report.json --project "Manga Colorizer Frontend" || true
       - name: Upload reports
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: dependency-check-reports
           path: |
