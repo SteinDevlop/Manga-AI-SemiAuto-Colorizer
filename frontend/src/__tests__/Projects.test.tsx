@@ -23,7 +23,7 @@ describe("Projects", () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText("Cargando proyectos...")).toBeInTheDocument();
+    expect(screen.getByText("Loading projects...")).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByText("Proyecto A")).toBeInTheDocument();

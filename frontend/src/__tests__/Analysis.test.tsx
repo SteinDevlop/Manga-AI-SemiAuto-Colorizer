@@ -32,7 +32,7 @@ describe("Analysis", () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText("Cargando análisis...")).toBeInTheDocument();
+    expect(screen.getByText("Loading analysis...")).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByText("Protagonista")).toBeInTheDocument();

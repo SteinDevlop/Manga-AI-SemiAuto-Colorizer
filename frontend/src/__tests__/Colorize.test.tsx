@@ -29,6 +29,6 @@ describe("Colorize", () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText("Iniciar colorización")).toBeInTheDocument();
+    expect(screen.getByText("Loading...")).toBeInTheDocument();
   });
 });

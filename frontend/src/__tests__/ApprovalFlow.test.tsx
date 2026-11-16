@@ -26,7 +26,7 @@ describe("Approve", () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText("Cargando análisis...")).toBeInTheDocument();
+    expect(screen.getByText("Loading analysis...")).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByText("Aprobar análisis")).toBeInTheDocument();

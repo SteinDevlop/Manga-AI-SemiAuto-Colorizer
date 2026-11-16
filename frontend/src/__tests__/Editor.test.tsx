@@ -34,7 +34,7 @@ describe("Editor", () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText("Cargando editor...")).toBeInTheDocument();
+    expect(screen.getByText("Loading character...")).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByText("cabello")).toBeInTheDocument();

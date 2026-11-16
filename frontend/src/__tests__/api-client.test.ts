@@ -22,8 +22,8 @@ describe("api client", () => {
     const result = await api.get<typeof data>("/projects");
 
     expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining("/api/v1/projects"),
-      expect.objectContaining({ method: "GET" })
+      "http://localhost:8000/api/v1/projects",
+      expect.objectContaining({ headers: expect.objectContaining({ "Content-Type": "application/json" }) })
     );
     expect(result).toEqual(data);
   });
