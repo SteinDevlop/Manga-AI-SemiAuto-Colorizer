@@ -29,7 +29,7 @@ describe("Editor", () => {
     });
 
     render(
-      <MemoryRouter initialEntries={"/editor/char-1"}>
+      <MemoryRouter initialEntries={["/editor/char-1"]}>
         <Editor />
       </MemoryRouter>
     );
