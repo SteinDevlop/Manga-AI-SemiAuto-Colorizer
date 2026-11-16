@@ -84,9 +84,9 @@ def test_mask_artifact_no_binary_in_postgres():
     assert "hash_sha256" in columns
     # No LargeBinary or BLOB columns
     for col in mapper.columns:
-        assert "LargeBinary" not in str(col.type), (
-            f"Column {col.name} must not store binary data in PostgreSQL"
-        )
+        assert "LargeBinary" not in str(
+            col.type
+        ), f"Column {col.name} must not store binary data in PostgreSQL"
 
 
 def test_all_models_inherit_common_columns():
@@ -117,6 +117,6 @@ def test_all_models_inherit_common_columns():
     for model in models:
         mapper = inspect(model)
         columns = {c.name for c in mapper.columns}
-        assert {"id", "created_at", "updated_at"}.issubset(columns), (
-            f"{model.__name__} missing common columns"
-        )
+        assert {"id", "created_at", "updated_at"}.issubset(
+            columns
+        ), f"{model.__name__} missing common columns"

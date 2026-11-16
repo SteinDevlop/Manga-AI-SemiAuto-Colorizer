@@ -116,6 +116,6 @@ def test_repository_methods_are_async():
     for repo_cls, expected in repos:
         for method_name in expected:
             method = getattr(repo_cls, method_name)
-            assert asyncio.iscoroutinefunction(method), (
-                f"{repo_cls.__name__}.{method_name} must be async"
-            )
+            assert asyncio.iscoroutinefunction(
+                method
+            ), f"{repo_cls.__name__}.{method_name} must be async"
