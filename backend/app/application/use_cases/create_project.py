@@ -19,7 +19,9 @@ class ProjectRepository(Protocol):
         """Return True when a project with the given name already exists."""
         ...
 
-    async def create(self, *, name: str, description: str | None) -> object:  # pragma: no cover - protocol stub
+    async def create(
+        self, *, name: str, description: str | None
+    ) -> object:  # pragma: no cover - protocol stub
         """Create and persist a project, returning the persisted entity."""
         ...
 

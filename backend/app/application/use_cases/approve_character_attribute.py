@@ -68,9 +68,7 @@ class ApproveCharacterAttributeUseCase:
     ) -> None:
         self._character_attribute_repository = character_attribute_repository
 
-    async def execute(
-        self, input_data: ApproveCharacterAttributeInput
-    ) -> CharacterAttributeOutput:
+    async def execute(self, input_data: ApproveCharacterAttributeInput) -> CharacterAttributeOutput:
         """Execute the approve character attribute use case.
 
         Raises:

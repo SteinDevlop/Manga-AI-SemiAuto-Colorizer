@@ -17,7 +17,9 @@ from app.core.exceptions import NotFoundError
 class ArtifactRepository(Protocol):
     """Port for artifact persistence operations."""
 
-    async def get_by_id(self, *, artifact_id: str) -> object | None:  # pragma: no cover - protocol stub
+    async def get_by_id(
+        self, *, artifact_id: str
+    ) -> object | None:  # pragma: no cover - protocol stub
         """Return the artifact with the given ID, or None when not found."""
         ...
 
@@ -29,11 +31,15 @@ class ArtifactRepository(Protocol):
 class StorageService(Protocol):
     """Port for artifact storage operations."""
 
-    def exists(self, *, artifact_id: str, artifact_type: str) -> bool:  # pragma: no cover - protocol stub
+    def exists(
+        self, *, artifact_id: str, artifact_type: str
+    ) -> bool:  # pragma: no cover - protocol stub
         """Return True when the artifact exists in storage."""
         ...
 
-    def read(self, *, artifact_id: str, artifact_type: str) -> bytes:  # pragma: no cover - protocol stub
+    def read(
+        self, *, artifact_id: str, artifact_type: str
+    ) -> bytes:  # pragma: no cover - protocol stub
         """Return the binary content of the artifact."""
         ...
 
@@ -93,9 +99,7 @@ class GetArtifactUseCase:
                 },
             )
 
-        entity = await self._artifact_repository.get_by_id(
-            artifact_id=input_data.artifact_id
-        )
+        entity = await self._artifact_repository.get_by_id(artifact_id=input_data.artifact_id)
         if entity is None:
             raise NotFoundError(
                 message="Artifact not found in repository.",

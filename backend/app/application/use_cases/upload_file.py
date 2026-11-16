@@ -144,9 +144,7 @@ class UploadFileUseCase:
         await self._file_validator.validate_mime_type(
             path=path, artifact_type=input_data.artifact_type
         )
-        await self._file_validator.validate_size(
-            path=path, artifact_type=input_data.artifact_type
-        )
+        await self._file_validator.validate_size(path=path, artifact_type=input_data.artifact_type)
         await self._file_validator.validate_content(path=path)
         await self._file_validator.validate_dimensions(
             path=path, artifact_type=input_data.artifact_type

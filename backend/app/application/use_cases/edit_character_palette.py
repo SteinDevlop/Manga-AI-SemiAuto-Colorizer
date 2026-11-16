@@ -72,9 +72,7 @@ class EditCharacterPaletteUseCase:
     ) -> None:
         self._character_palette_repository = character_palette_repository
 
-    async def execute(
-        self, input_data: EditCharacterPaletteInput
-    ) -> CharacterPaletteOutput:
+    async def execute(self, input_data: EditCharacterPaletteInput) -> CharacterPaletteOutput:
         """Execute the edit character palette use case.
 
         Raises:

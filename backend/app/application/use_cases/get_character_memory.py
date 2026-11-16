@@ -67,9 +67,7 @@ class GetCharacterMemoryUseCase:
     ) -> None:
         self._character_memory_repository = character_memory_repository
 
-    async def execute(
-        self, input_data: GetCharacterMemoryInput
-    ) -> CharacterMemoryOutput:
+    async def execute(self, input_data: GetCharacterMemoryInput) -> CharacterMemoryOutput:
         """Execute the get character memory use case.
 
         Raises:
@@ -91,9 +89,7 @@ class GetCharacterMemoryUseCase:
             atributos_estables=entity.atributos_estables,
             atributos_escena=entity.atributos_escena,
             referencia_estable=entity.referencia_estable,
-            pagina_origen_id=(
-                str(entity.pagina_origen_id) if entity.pagina_origen_id else None
-            ),
+            pagina_origen_id=(str(entity.pagina_origen_id) if entity.pagina_origen_id else None),
             created_at=entity.created_at.isoformat() if entity.created_at else None,
             updated_at=entity.updated_at.isoformat() if entity.updated_at else None,
         )

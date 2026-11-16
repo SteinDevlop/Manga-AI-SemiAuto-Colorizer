@@ -19,7 +19,9 @@ from app.core.exceptions import NotFoundError
 class PageRepository(Protocol):
     """Port for page read operations."""
 
-    async def get_by_id(self, *, page_id: UUID) -> object | None:  # pragma: no cover - protocol stub
+    async def get_by_id(
+        self, *, page_id: UUID
+    ) -> object | None:  # pragma: no cover - protocol stub
         """Return the page with the given ID, or None when not found."""
         ...
 
@@ -74,7 +76,9 @@ class CharacterAppearanceRepository(Protocol):
 class AnalysisRepository(Protocol):
     """Port for analysis persistence operations."""
 
-    async def get_by_page_id(self, *, page_id: UUID) -> object | None:  # pragma: no cover - protocol stub
+    async def get_by_page_id(
+        self, *, page_id: UUID
+    ) -> object | None:  # pragma: no cover - protocol stub
         """Return the analysis for the given page, or None when missing."""
         ...
 
@@ -287,9 +291,7 @@ class AnalyzePageUseCase:
         all_character_detections: list[dict] = []
 
         for panel_entity in panel_entities:
-            character_detections = self._character_detector.detect(
-                image_path, min_confidence=0.0
-            )
+            character_detections = self._character_detector.detect(image_path, min_confidence=0.0)
             all_character_detections.extend(character_detections)
 
             for detection in character_detections:
@@ -366,9 +368,7 @@ class AnalyzePageUseCase:
                 )
 
         # 4. Update or create the analysis record.
-        analysis = await self._analysis_repository.get_by_page_id(
-            page_id=input_data.page_id
-        )
+        analysis = await self._analysis_repository.get_by_page_id(page_id=input_data.page_id)
         if analysis is None:
             analysis = await self._analysis_repository.create(
                 page_id=input_data.page_id,

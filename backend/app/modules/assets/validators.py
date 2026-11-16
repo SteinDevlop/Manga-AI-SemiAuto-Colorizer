@@ -35,10 +35,22 @@ _EXTENSION_TO_MIME: dict[str, str] = {
 }
 
 #: Dangerous extensions that must never be treated as image content.
-_DANGEROUS_EXTENSIONS: frozenset[str] = frozenset({
-    ".exe", ".bat", ".cmd", ".com", ".sh", ".ps1", ".dll",
-    ".so", ".scr", ".vbs", ".js", ".jar",
-})
+_DANGEROUS_EXTENSIONS: frozenset[str] = frozenset(
+    {
+        ".exe",
+        ".bat",
+        ".cmd",
+        ".com",
+        ".sh",
+        ".ps1",
+        ".dll",
+        ".so",
+        ".scr",
+        ".vbs",
+        ".js",
+        ".jar",
+    }
+)
 
 #: Magic byte signatures mapped to their canonical MIME type.
 _MAGIC_BYTES: tuple[tuple[bytes, str], ...] = (
@@ -55,9 +67,9 @@ _MAGIC_BYTES: tuple[tuple[bytes, str], ...] = (
 
 #: Dangerous magic byte signatures that must be rejected outright.
 _DANGEROUS_MAGIC: tuple[bytes, ...] = (
-    b"MZ",   # PE / Windows executable
+    b"MZ",  # PE / Windows executable
     b"\x7fELF",  # ELF executable
-    b"#!",   # shell script
+    b"#!",  # shell script
 )
 
 
@@ -137,8 +149,7 @@ def validate_mime_type(file_path: str | Path, allowed_mimes: set[str]) -> None:
     if detected not in allowed_mimes:
         raise ValidationError(
             message=(
-                f"MIME type not allowed: {detected} "
-                f"(expected one of {sorted(allowed_mimes)})"
+                f"MIME type not allowed: {detected} (expected one of {sorted(allowed_mimes)})"
             ),
             details={
                 "path": str(path),
@@ -170,10 +181,7 @@ def validate_file_size(file_path: str | Path, max_size_bytes: int) -> None:
     size_bytes = path.stat().st_size
     if size_bytes > max_size_bytes:
         raise ValidationError(
-            message=(
-                f"File size exceeds limit: {size_bytes} bytes "
-                f"(max {max_size_bytes} bytes)"
-            ),
+            message=(f"File size exceeds limit: {size_bytes} bytes (max {max_size_bytes} bytes)"),
             details={
                 "path": str(path),
                 "size_bytes": size_bytes,
@@ -235,8 +243,7 @@ def validate_dimensions(
     if width > max_width or height > max_height:
         raise ValidationError(
             message=(
-                f"Image dimensions exceed limits: {width}x{height} "
-                f"(max {max_width}x{max_height})"
+                f"Image dimensions exceed limits: {width}x{height} (max {max_width}x{max_height})"
             ),
             details={
                 "path": str(path),
@@ -320,9 +327,7 @@ def validate_content_matches_extension(file_path: str | Path) -> None:
         return
 
     # Dangerous content detected regardless of extension.
-    if detected_magic is not None and detected_magic.startswith(
-        "application/dangerous-"
-    ):
+    if detected_magic is not None and detected_magic.startswith("application/dangerous-"):
         raise ValidationError(
             message=f"Dangerous file content detected: {path}",
             details={
@@ -386,16 +391,26 @@ def generate_safe_internal_name(original_name: str) -> str:
     base_name = Path(name).name
     suffix = Path(base_name).suffix.lower()
 
-    dangerous = {".exe", ".bat", ".cmd", ".com", ".sh", ".ps1", ".dll",
-                 ".so", ".scr", ".vbs", ".js", ".jar"}
+    dangerous = {
+        ".exe",
+        ".bat",
+        ".cmd",
+        ".com",
+        ".sh",
+        ".ps1",
+        ".dll",
+        ".so",
+        ".scr",
+        ".vbs",
+        ".js",
+        ".jar",
+    }
     if suffix in dangerous or not suffix:
         suffix = ".bin"
 
     # Keep only alphanumerics, dots, dashes and underscores in the stem
     # portion of the extension to avoid dangerous characters.
-    safe_suffix = "".join(
-        ch for ch in suffix if ch.isalnum() or ch in {".", "-", "_"}
-    )
+    safe_suffix = "".join(ch for ch in suffix if ch.isalnum() or ch in {".", "-", "_"})
     if not safe_suffix or safe_suffix == ".":
         safe_suffix = ".bin"
 

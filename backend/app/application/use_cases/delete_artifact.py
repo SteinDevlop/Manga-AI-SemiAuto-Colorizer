@@ -29,11 +29,15 @@ class ArtifactRepository(Protocol):
 class StorageService(Protocol):
     """Port for artifact storage operations."""
 
-    def exists(self, *, artifact_id: str, artifact_type: str) -> bool:  # pragma: no cover - protocol stub
+    def exists(
+        self, *, artifact_id: str, artifact_type: str
+    ) -> bool:  # pragma: no cover - protocol stub
         """Return True when the artifact exists in storage."""
         ...
 
-    def delete(self, *, artifact_id: str, artifact_type: str) -> bool:  # pragma: no cover - protocol stub
+    def delete(
+        self, *, artifact_id: str, artifact_type: str
+    ) -> bool:  # pragma: no cover - protocol stub
         """Delete the artifact from storage. Returns False if absent."""
         ...
 
@@ -71,9 +75,7 @@ class DeleteArtifactUseCase:
             NotFoundError: when the artifact does not exist in storage or
                 the repository.
         """
-        if not await self._artifact_repository.exists(
-            artifact_id=input_data.artifact_id
-        ):
+        if not await self._artifact_repository.exists(artifact_id=input_data.artifact_id):
             raise NotFoundError(
                 message="Artifact not found in repository.",
                 details={

@@ -64,9 +64,7 @@ class CharacterRepository:
 
     async def exists(self, character_id: UUID) -> bool:
         """Return ``True`` when a character with the given id exists."""
-        stmt: Select = (
-            select(Character.id).where(Character.id == character_id).limit(1)
-        )
+        stmt: Select = select(Character.id).where(Character.id == character_id).limit(1)
         result = await self.session.execute(stmt)
         return result.first() is not None
 
@@ -83,9 +81,7 @@ class CharacterAppearanceRepository:
 
     async def get(self, appearance_id: UUID) -> CharacterAppearance | None:
         """Return the appearance with the given id, or ``None`` if missing."""
-        stmt: Select = select(CharacterAppearance).where(
-            CharacterAppearance.id == appearance_id
-        )
+        stmt: Select = select(CharacterAppearance).where(CharacterAppearance.id == appearance_id)
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
@@ -95,9 +91,7 @@ class CharacterAppearanceRepository:
         character_id: UUID | None = None,
     ) -> list[CharacterAppearance]:
         """Return appearances, optionally filtered by page id and/or character id."""
-        stmt: Select = select(CharacterAppearance).order_by(
-            CharacterAppearance.created_at
-        )
+        stmt: Select = select(CharacterAppearance).order_by(CharacterAppearance.created_at)
         if page_id is not None:
             stmt = stmt.where(CharacterAppearance.page_id == page_id)
         if character_id is not None:
@@ -113,9 +107,7 @@ class CharacterAppearanceRepository:
         await self.session.refresh(appearance)
         return appearance
 
-    async def update(
-        self, appearance_id: UUID, **kwargs: Any
-    ) -> CharacterAppearance | None:
+    async def update(self, appearance_id: UUID, **kwargs: Any) -> CharacterAppearance | None:
         """Update the attributes of the appearance with the given id."""
         appearance = await self.get(appearance_id)
         if appearance is None:
@@ -138,9 +130,7 @@ class CharacterAppearanceRepository:
     async def exists(self, appearance_id: UUID) -> bool:
         """Return ``True`` when an appearance with the given id exists."""
         stmt: Select = (
-            select(CharacterAppearance.id)
-            .where(CharacterAppearance.id == appearance_id)
-            .limit(1)
+            select(CharacterAppearance.id).where(CharacterAppearance.id == appearance_id).limit(1)
         )
         result = await self.session.execute(stmt)
         return result.first() is not None

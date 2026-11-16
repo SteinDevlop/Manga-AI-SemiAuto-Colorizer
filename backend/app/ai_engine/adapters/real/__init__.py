@@ -21,9 +21,7 @@ class ModelUnavailableError(RuntimeError):
     def __init__(self, model_name: str, reason: str) -> None:
         self.model_name = model_name
         self.reason = reason
-        super().__init__(
-            f"Model '{model_name}' is unavailable: {reason}"
-        )
+        super().__init__(f"Model '{model_name}' is unavailable: {reason}")
 
 
 # NOTE: ModelUnavailableError is defined above the submodule imports so that

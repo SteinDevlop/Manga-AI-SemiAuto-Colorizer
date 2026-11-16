@@ -4,7 +4,6 @@ Verifies state machine transitions for colorization jobs. No database
 required — only pure functions from app.modules.colorization.states.
 """
 
-
 from app.modules.colorization.states import (
     ACTIVE_STATES,
     ALLOWED_TRANSITIONS,
@@ -19,8 +18,13 @@ from app.modules.colorization.states import (
 def test_job_states_defined():
     """Todos los estados esperados deben estar definidos."""
     expected = {
-        "pending", "preprocessing", "colorizing", "refining",
-        "completed", "failed", "cancelled",
+        "pending",
+        "preprocessing",
+        "colorizing",
+        "refining",
+        "completed",
+        "failed",
+        "cancelled",
     }
     assert set(JOB_STATES) == expected
 

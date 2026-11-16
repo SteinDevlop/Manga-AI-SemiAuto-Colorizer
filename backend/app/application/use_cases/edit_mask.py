@@ -114,9 +114,7 @@ class EditMaskUseCase:
                 updates["ruta_archivo"] = ruta_archivo
             if hash_sha256 is not None:
                 updates["hash_sha256"] = hash_sha256
-            updated = await self._artifact_repository.update(
-                artifact_id=artifact.id, **updates
-            )
+            updated = await self._artifact_repository.update(artifact_id=artifact.id, **updates)
             if updated is None:
                 raise NotFoundError(
                     message="Mask artifact not found.",

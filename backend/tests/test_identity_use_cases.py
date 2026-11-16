@@ -118,9 +118,7 @@ def test_group_identities_happy_path():
     page_id = uuid.uuid4()
     appearance_ids = [uuid.uuid4(), uuid.uuid4()]
 
-    analysis_repo = StubAnalysisRepository(
-        {analysis_id: StubAnalysis(analysis_id, page_id)}
-    )
+    analysis_repo = StubAnalysisRepository({analysis_id: StubAnalysis(analysis_id, page_id)})
     appearance_repo = StubAppearanceRepository(
         [
             StubAppearance(id=appearance_ids[0], page_id=page_id, confianza_deteccion=0.9),
@@ -191,9 +189,7 @@ def test_review_identity_requires_character_id():
     )
     with pytest.raises(ValidationError):
         asyncio.run(
-            use_case.execute(
-                ReviewIdentityInput(appearance_id=uuid.uuid4(), character_id=None)
-            )
+            use_case.execute(ReviewIdentityInput(appearance_id=uuid.uuid4(), character_id=None))
         )
 
 
@@ -241,8 +237,6 @@ def test_review_identity_missing_appearance():
     with pytest.raises(NotFoundError):
         asyncio.run(
             use_case.execute(
-                ReviewIdentityInput(
-                    appearance_id=uuid.uuid4(), character_id=uuid.uuid4()
-                )
+                ReviewIdentityInput(appearance_id=uuid.uuid4(), character_id=uuid.uuid4())
             )
         )

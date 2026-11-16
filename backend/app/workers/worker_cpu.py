@@ -20,9 +20,7 @@ WORKER_CPU_QUEUES: str = os.getenv("WORKER_CPU_QUEUES", "WORKER_CPU_QUEUES")
 # Concurrency for the CPU worker: defaults to the available CPU count,
 # overridable through the WORKER_CPU_CONCURRENCY environment variable.
 _cpu_env = os.getenv("WORKER_CPU_CONCURRENCY")
-WORKER_CPU_CONCURRENCY: int = (
-    int(_cpu_env) if _cpu_env else (os.cpu_count() or 2)
-)
+WORKER_CPU_CONCURRENCY: int = int(_cpu_env) if _cpu_env else (os.cpu_count() or 2)
 
 
 def configure() -> None:

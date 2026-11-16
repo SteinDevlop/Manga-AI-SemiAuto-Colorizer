@@ -55,17 +55,13 @@ class ApproveAnalysisUseCase:
     ) -> None:
         self._analysis_repository = analysis_repository
 
-    async def execute(
-        self, input_data: ApproveAnalysisInput
-    ) -> ApproveAnalysisOutput:
+    async def execute(self, input_data: ApproveAnalysisInput) -> ApproveAnalysisOutput:
         """Execute the approve analysis use case.
 
         Raises:
             NotFoundError: when no analysis matches the given ID.
         """
-        analysis = await self._analysis_repository.get(
-            analysis_id=input_data.analysis_id
-        )
+        analysis = await self._analysis_repository.get(analysis_id=input_data.analysis_id)
         if analysis is None:
             raise NotFoundError(
                 message="Analysis not found.",

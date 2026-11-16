@@ -98,9 +98,7 @@ class ReplaceMaskUseCase:
 
         artifact = existing[0]
 
-        computed_hash = self._storage_service.sha256_of_file(
-            input_data.nueva_ruta_archivo
-        )
+        computed_hash = self._storage_service.sha256_of_file(input_data.nueva_ruta_archivo)
         if computed_hash != input_data.nuevo_hash_sha256:
             raise ValidationError(
                 message="Provided hash does not match the file content.",

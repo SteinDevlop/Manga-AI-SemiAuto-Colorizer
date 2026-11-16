@@ -66,9 +66,7 @@ class ApproveCharacterPaletteUseCase:
     ) -> None:
         self._character_palette_repository = character_palette_repository
 
-    async def execute(
-        self, input_data: ApproveCharacterPaletteInput
-    ) -> CharacterPaletteOutput:
+    async def execute(self, input_data: ApproveCharacterPaletteInput) -> CharacterPaletteOutput:
         """Execute the approve character palette use case.
 
         Raises:

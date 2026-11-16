@@ -103,9 +103,7 @@ def test_approve_analysis_not_found():
     """Debe lanzar NotFoundError si el análisis no existe."""
     use_case = ApproveAnalysisUseCase(analysis_repository=StubAnalysisRepository([]))
     with pytest.raises(NotFoundError):
-        asyncio.run(
-            use_case.execute(ApproveAnalysisInput(analysis_id=uuid.uuid4()))
-        )
+        asyncio.run(use_case.execute(ApproveAnalysisInput(analysis_id=uuid.uuid4())))
 
 
 def test_create_colorization_job_blocked_without_approval():
@@ -119,11 +117,7 @@ def test_create_colorization_job_blocked_without_approval():
         colorization_job_repository=job_repo,
     )
     with pytest.raises(ValidationError):
-        asyncio.run(
-            use_case.execute(
-                CreateColorizationJobInput(analysis_id=analysis_id)
-            )
-        )
+        asyncio.run(use_case.execute(CreateColorizationJobInput(analysis_id=analysis_id)))
 
 
 def test_create_colorization_job_happy_path():
@@ -136,11 +130,7 @@ def test_create_colorization_job_happy_path():
         analysis_repository=analysis_repo,
         colorization_job_repository=job_repo,
     )
-    output = asyncio.run(
-        use_case.execute(
-            CreateColorizationJobInput(analysis_id=analysis_id)
-        )
-    )
+    output = asyncio.run(use_case.execute(CreateColorizationJobInput(analysis_id=analysis_id)))
 
     assert output.estado == "pending"
     assert output.progreso == 0
@@ -154,8 +144,4 @@ def test_create_colorization_job_not_found():
         colorization_job_repository=StubColorizationJobRepository(),
     )
     with pytest.raises(NotFoundError):
-        asyncio.run(
-            use_case.execute(
-                CreateColorizationJobInput(analysis_id=uuid.uuid4())
-            )
-        )
+        asyncio.run(use_case.execute(CreateColorizationJobInput(analysis_id=uuid.uuid4())))

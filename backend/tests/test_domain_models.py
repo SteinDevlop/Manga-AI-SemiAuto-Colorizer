@@ -44,8 +44,7 @@ def test_page_has_project_foreign_key():
 
     mapper = inspect(Page)
     project_fks = [
-        fk for fk in mapper.local_table.foreign_keys
-        if fk.column.table.name == "projects"
+        fk for fk in mapper.local_table.foreign_keys if fk.column.table.name == "projects"
     ]
     assert len(project_fks) == 1, "Page must have exactly one FK to projects"
     assert project_fks[0].column.name == "id"
@@ -57,10 +56,7 @@ def test_analysis_has_unique_page_foreign_key():
     from app.modules.page_analysis.models import Analysis
 
     mapper = inspect(Analysis)
-    page_fks = [
-        fk for fk in mapper.local_table.foreign_keys
-        if fk.column.table.name == "pages"
-    ]
+    page_fks = [fk for fk in mapper.local_table.foreign_keys if fk.column.table.name == "pages"]
     assert len(page_fks) == 1, "Analysis must have exactly one FK to pages"
     assert not page_fks[0].column.nullable
 
@@ -74,9 +70,7 @@ def test_character_appearance_has_three_foreign_keys():
     from app.modules.character_analysis.models import CharacterAppearance
 
     mapper = inspect(CharacterAppearance)
-    fk_tables = {
-        fk.column.table.name for fk in mapper.local_table.foreign_keys
-    }
+    fk_tables = {fk.column.table.name for fk in mapper.local_table.foreign_keys}
     assert {"pages", "characters", "panels"}.issubset(fk_tables)
 
 
@@ -108,8 +102,16 @@ def test_all_models_inherit_common_columns():
     from app.modules.projects.models import Page, Project
 
     models = [
-        Project, Page, Panel, Analysis, Character, CharacterAppearance,
-        CharacterAttribute, CharacterPalette, MaskArtifact, ColorizationJob,
+        Project,
+        Page,
+        Panel,
+        Analysis,
+        Character,
+        CharacterAppearance,
+        CharacterAttribute,
+        CharacterPalette,
+        MaskArtifact,
+        ColorizationJob,
         ModelManifest,
     ]
     for model in models:

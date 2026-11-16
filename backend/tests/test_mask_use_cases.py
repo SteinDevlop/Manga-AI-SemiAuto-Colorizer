@@ -236,9 +236,7 @@ def test_correct_mask_requires_correcciones():
     use_case = CorrectMaskUseCase(artifact_repository=repo)
     with pytest.raises(ValidationError):
         asyncio.run(
-            use_case.execute(
-                CorrectMaskInput(appearance_id=appearance_id, correcciones={})
-            )
+            use_case.execute(CorrectMaskInput(appearance_id=appearance_id, correcciones={}))
         )
 
 

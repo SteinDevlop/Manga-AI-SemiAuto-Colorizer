@@ -183,9 +183,7 @@ class AnalysisRepository:
 
     async def exists(self, analysis_id: UUID) -> bool:
         """Return ``True`` when an analysis with the given id exists."""
-        stmt: Select = (
-            select(Analysis.id).where(Analysis.id == analysis_id).limit(1)
-        )
+        stmt: Select = select(Analysis.id).where(Analysis.id == analysis_id).limit(1)
         result = await self.session.execute(stmt)
         return result.first() is not None
 

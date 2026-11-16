@@ -67,9 +67,7 @@ class ProjectRepository:
 
     async def exists(self, project_id: UUID) -> bool:
         """Return ``True`` when a project with the given id exists."""
-        stmt: Select = (
-            select(Project.id).where(Project.id == project_id).limit(1)
-        )
+        stmt: Select = select(Project.id).where(Project.id == project_id).limit(1)
         result = await self.session.execute(stmt)
         return result.first() is not None
 

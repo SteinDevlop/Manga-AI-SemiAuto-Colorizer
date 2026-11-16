@@ -137,10 +137,12 @@ class StorageService:
         results: list[dict[str, Any]] = []
         for candidate in target_dir.iterdir():
             if candidate.is_file():
-                results.append({
-                    "artifact_id": candidate.stem,
-                    "tipo": artifact_type,
-                    "ruta_archivo": str(candidate),
-                    "tamano_bytes": candidate.stat().st_size,
-                })
+                results.append(
+                    {
+                        "artifact_id": candidate.stem,
+                        "tipo": artifact_type,
+                        "ruta_archivo": str(candidate),
+                        "tamano_bytes": candidate.stat().st_size,
+                    }
+                )
         return results

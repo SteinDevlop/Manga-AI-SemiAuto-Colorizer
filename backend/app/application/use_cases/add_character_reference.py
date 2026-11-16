@@ -75,9 +75,7 @@ class AddCharacterReferenceUseCase:
     ) -> None:
         self._character_memory_repository = character_memory_repository
 
-    async def execute(
-        self, input_data: AddCharacterReferenceInput
-    ) -> CharacterMemoryOutput:
+    async def execute(self, input_data: AddCharacterReferenceInput) -> CharacterMemoryOutput:
         """Execute the add character reference use case.
 
         Raises:
@@ -118,9 +116,7 @@ class AddCharacterReferenceUseCase:
             atributos_estables=target.atributos_estables,
             atributos_escena=target.atributos_escena,
             referencia_estable=target.referencia_estable,
-            pagina_origen_id=(
-                str(target.pagina_origen_id) if target.pagina_origen_id else None
-            ),
+            pagina_origen_id=(str(target.pagina_origen_id) if target.pagina_origen_id else None),
             created_at=target.created_at.isoformat() if target.created_at else None,
             updated_at=target.updated_at.isoformat() if target.updated_at else None,
         )

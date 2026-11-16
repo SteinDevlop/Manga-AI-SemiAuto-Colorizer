@@ -79,9 +79,7 @@ class GetModelUseCase:
         Raises:
             NotFoundError: when no manifest matches the given model ID.
         """
-        entity = await self._model_manifest_repository.get(
-            manifest_id=input_data.model_id
-        )
+        entity = await self._model_manifest_repository.get(manifest_id=input_data.model_id)
         if entity is None:
             raise NotFoundError(
                 message="Model not found.",

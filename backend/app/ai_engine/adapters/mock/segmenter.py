@@ -53,9 +53,7 @@ class MockSegmenter:
         masks: list[MaskArtifact] = []
         for index, region in enumerate(regions, start=1):
             region_id = str(region.get("region_id", f"region-{index}"))
-            digest = hashlib.sha256(
-                f"{image_path}:{region_id}".encode("utf-8")
-            ).hexdigest()
+            digest = hashlib.sha256(f"{image_path}:{region_id}".encode("utf-8")).hexdigest()
             masks.append(
                 MaskArtifact(
                     region_id=region_id,

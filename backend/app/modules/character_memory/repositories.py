@@ -36,13 +36,9 @@ class CharacterMemoryRepository:
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
-    async def list_by_character(
-        self, character_id: UUID
-    ) -> list[CharacterMemory]:
+    async def list_by_character(self, character_id: UUID) -> list[CharacterMemory]:
         """Return all memories for a given character."""
-        stmt: Select = select(CharacterMemory).where(
-            CharacterMemory.character_id == character_id
-        )
+        stmt: Select = select(CharacterMemory).where(CharacterMemory.character_id == character_id)
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
@@ -54,9 +50,7 @@ class CharacterMemoryRepository:
         await self.session.refresh(memory)
         return memory
 
-    async def update(
-        self, memory_id: UUID, **kwargs: Any
-    ) -> CharacterMemory | None:
+    async def update(self, memory_id: UUID, **kwargs: Any) -> CharacterMemory | None:
         """Update the attributes of the memory with the given id."""
         memory = await self.get(memory_id)
         if memory is None:
@@ -78,9 +72,7 @@ class CharacterMemoryRepository:
 
     async def exists(self, memory_id: UUID) -> bool:
         """Return ``True`` when a memory with the given id exists."""
-        stmt: Select = (
-            select(CharacterMemory.id).where(CharacterMemory.id == memory_id).limit(1)
-        )
+        stmt: Select = select(CharacterMemory.id).where(CharacterMemory.id == memory_id).limit(1)
         result = await self.session.execute(stmt)
         return result.first() is not None
 
@@ -137,8 +129,6 @@ class ModelManifestRepository:
 
     async def exists(self, manifest_id: UUID) -> bool:
         """Return ``True`` when a manifest with the given id exists."""
-        stmt: Select = (
-            select(ModelManifest.id).where(ModelManifest.id == manifest_id).limit(1)
-        )
+        stmt: Select = select(ModelManifest.id).where(ModelManifest.id == manifest_id).limit(1)
         result = await self.session.execute(stmt)
         return result.first() is not None

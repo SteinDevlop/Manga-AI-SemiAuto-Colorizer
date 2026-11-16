@@ -60,9 +60,7 @@ class StubMemoryRepository:
         self._memories = {m.character_id: m for m in memories}
         self.updated: dict[uuid.UUID, dict[str, Any]] = {}
 
-    async def get_by_character(
-        self, *, character_id: uuid.UUID
-    ) -> StubMemory | None:
+    async def get_by_character(self, *, character_id: uuid.UUID) -> StubMemory | None:
         return self._memories.get(character_id)
 
     async def update(
@@ -109,9 +107,7 @@ class StubAppearanceRepository:
     def __init__(self, appearances: list[StubAppearance]):
         self._appearances = appearances
 
-    async def list_by_character(
-        self, *, character_id: uuid.UUID
-    ) -> list[StubAppearance]:
+    async def list_by_character(self, *, character_id: uuid.UUID) -> list[StubAppearance]:
         return [a for a in self._appearances if a.character_id == character_id]
 
 
@@ -152,9 +148,7 @@ def test_get_character_memory_happy_path():
     )
     repo = StubMemoryRepository([memory])
     use_case = GetCharacterMemoryUseCase(character_memory_repository=repo)
-    output = asyncio.run(
-        use_case.execute(GetCharacterMemoryInput(character_id=character_id))
-    )
+    output = asyncio.run(use_case.execute(GetCharacterMemoryInput(character_id=character_id)))
 
     assert output.character_id == str(character_id)
     assert output.atributos_estables == {"cabello": "negro", "ojos": "café"}
@@ -164,13 +158,9 @@ def test_get_character_memory_happy_path():
 
 def test_get_character_memory_not_found():
     """Debe lanzar NotFoundError si no existe memoria del personaje."""
-    use_case = GetCharacterMemoryUseCase(
-        character_memory_repository=StubMemoryRepository([])
-    )
+    use_case = GetCharacterMemoryUseCase(character_memory_repository=StubMemoryRepository([]))
     with pytest.raises(NotFoundError):
-        asyncio.run(
-            use_case.execute(GetCharacterMemoryInput(character_id=uuid.uuid4()))
-        )
+        asyncio.run(use_case.execute(GetCharacterMemoryInput(character_id=uuid.uuid4())))
 
 
 def test_update_character_memory_preserves_unchanged():
@@ -203,20 +193,14 @@ def test_update_character_memory_requires_at_least_one_field():
     """Sin campos modificables debe lanzar ValidationError."""
     character_id = uuid.uuid4()
     repo = StubMemoryRepository([])
-    use_case = UpdateCharacterMemoryUseCase(
-        character_memory_repository=repo
-    )
+    use_case = UpdateCharacterMemoryUseCase(character_memory_repository=repo)
     with pytest.raises(ValidationError):
-        asyncio.run(
-            use_case.execute(UpdateCharacterMemoryInput(character_id=character_id))
-        )
+        asyncio.run(use_case.execute(UpdateCharacterMemoryInput(character_id=character_id)))
 
 
 def test_update_character_memory_not_found():
     """Debe lanzar NotFoundError si el personaje no tiene memoria."""
-    use_case = UpdateCharacterMemoryUseCase(
-        character_memory_repository=StubMemoryRepository([])
-    )
+    use_case = UpdateCharacterMemoryUseCase(character_memory_repository=StubMemoryRepository([]))
     with pytest.raises(NotFoundError):
         asyncio.run(
             use_case.execute(
@@ -265,15 +249,11 @@ def test_add_character_reference_update():
 
 def test_add_character_reference_empty_rejects():
     """referencia_estable vacía debe lanzar ValidationError."""
-    use_case = AddCharacterReferenceUseCase(
-        character_memory_repository=StubMemoryRepository([])
-    )
+    use_case = AddCharacterReferenceUseCase(character_memory_repository=StubMemoryRepository([]))
     with pytest.raises(ValidationError):
         asyncio.run(
             use_case.execute(
-                AddCharacterReferenceInput(
-                    character_id=uuid.uuid4(), referencia_estable="  "
-                )
+                AddCharacterReferenceInput(character_id=uuid.uuid4(), referencia_estable="  ")
             )
         )
 
@@ -287,12 +267,8 @@ def test_list_character_appearances():
         StubAppearance(id=uuid.uuid4(), character_id=character_id, page_id=page_id),
     ]
     repo = StubAppearanceRepository(appearances)
-    use_case = ListCharacterAppearancesUseCase(
-        character_appearance_repository=repo
-    )
-    output = asyncio.run(
-        use_case.execute(character_id=character_id)
-    )
+    use_case = ListCharacterAppearancesUseCase(character_appearance_repository=repo)
+    output = asyncio.run(use_case.execute(character_id=character_id))
 
     assert output.total == 2
     assert len(output.appearances) == 2
@@ -304,6 +280,4 @@ def test_list_character_appearances_not_found_when_empty():
         character_appearance_repository=StubAppearanceRepository([])
     )
     with pytest.raises(NotFoundError):
-        asyncio.run(
-            use_case.execute(character_id=uuid.uuid4())
-        )
+        asyncio.run(use_case.execute(character_id=uuid.uuid4()))

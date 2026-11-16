@@ -100,9 +100,7 @@ def test_execute_raises_notfound_when_analysis_missing():
         mask_artifact_repository=StubProtocol(),
     )
     with pytest.raises(NotFoundError):
-        asyncio.run(
-            use_case.execute(GetAnalysisInput(analysis_id=uuid.uuid4()))
-        )
+        asyncio.run(use_case.execute(GetAnalysisInput(analysis_id=uuid.uuid4())))
 
 
 def test_output_dto_fields():

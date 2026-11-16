@@ -4,7 +4,6 @@ Verifies that each repository class exposes the expected CRUD methods.
 No database connection required — only class introspection.
 """
 
-
 from app.modules.character_analysis.repositories import (
     CharacterAppearanceRepository,
     CharacterRepository,
@@ -63,17 +62,13 @@ def test_character_repository_has_crud_methods():
 
 def test_character_appearance_repository_has_crud_methods():
     """CharacterAppearanceRepository must expose CRUD methods plus list filters."""
-    methods = {
-        name for name in dir(CharacterAppearanceRepository) if not name.startswith("_")
-    }
+    methods = {name for name in dir(CharacterAppearanceRepository) if not name.startswith("_")}
     assert EXPECTED_METHODS.issubset(methods)
 
 
 def test_character_attribute_repository_has_crud_methods():
     """CharacterAttributeRepository must expose CRUD methods plus list-by-character."""
-    methods = {
-        name for name in dir(CharacterAttributeRepository) if not name.startswith("_")
-    }
+    methods = {name for name in dir(CharacterAttributeRepository) if not name.startswith("_")}
     assert EXPECTED_METHODS.issubset(methods)
 
 

@@ -165,9 +165,7 @@ class GetAnalysisUseCase:
         Raises:
             NotFoundError: when no analysis matches the given analysis_id.
         """
-        analysis = await self._analysis_repository.get(
-            analysis_id=input_data.analysis_id
-        )
+        analysis = await self._analysis_repository.get(analysis_id=input_data.analysis_id)
         if analysis is None:
             raise NotFoundError(
                 message="Analysis not found.",
@@ -214,9 +212,7 @@ class GetAnalysisUseCase:
 
             character_id = appearance_entity.character_id
             if character_id not in characters_by_id:
-                character_entity = await self._character_repository.get(
-                    character_id=character_id
-                )
+                character_entity = await self._character_repository.get(character_id=character_id)
                 if character_entity is not None:
                     characters_by_id[character_id] = CharacterOutput(
                         id=str(character_entity.id),

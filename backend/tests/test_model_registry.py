@@ -201,13 +201,13 @@ def test_get_model_not_found():
 def test_update_model_status_valid():
     """Debe actualizar el estado a un valor válido."""
     mid = uuid.uuid4()
-    manifest = StubModelManifest(id=mid, nombre_modelo="m", familia="f", version="1.0", estado="disponible")
+    manifest = StubModelManifest(
+        id=mid, nombre_modelo="m", familia="f", version="1.0", estado="disponible"
+    )
     repo = StubModelManifestRepository([manifest])
     use_case = UpdateModelStatusUseCase(model_manifest_repository=repo)
     output = asyncio.run(
-        use_case.execute(
-            UpdateModelStatusInput(model_id=mid, estado="experimental")
-        )
+        use_case.execute(UpdateModelStatusInput(model_id=mid, estado="experimental"))
     )
 
     assert output.estado == "experimental"
@@ -222,20 +222,14 @@ def test_update_model_status_invalid_rejects():
     use_case = UpdateModelStatusUseCase(model_manifest_repository=repo)
     with pytest.raises(ValidationError):
         asyncio.run(
-            use_case.execute(
-                UpdateModelStatusInput(model_id=mid, estado="estado-inexistente")
-            )
+            use_case.execute(UpdateModelStatusInput(model_id=mid, estado="estado-inexistente"))
         )
 
 
 def test_update_model_status_not_found():
     """Modelo inexistente debe lanzar NotFoundError."""
-    use_case = UpdateModelStatusUseCase(
-        model_manifest_repository=StubModelManifestRepository([])
-    )
+    use_case = UpdateModelStatusUseCase(model_manifest_repository=StubModelManifestRepository([]))
     with pytest.raises(NotFoundError):
         asyncio.run(
-            use_case.execute(
-                UpdateModelStatusInput(model_id=uuid.uuid4(), estado="disponible")
-            )
+            use_case.execute(UpdateModelStatusInput(model_id=uuid.uuid4(), estado="disponible"))
         )

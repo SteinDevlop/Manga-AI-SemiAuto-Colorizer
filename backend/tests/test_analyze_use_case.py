@@ -44,9 +44,7 @@ class StubDetector:
 
 
 class StubSegmenter:
-    async def segment(
-        self, image_path: str, *, regions: list[dict]
-    ) -> list[dict]:
+    async def segment(self, image_path: str, *, regions: list[dict]) -> list[dict]:
         return []
 
 

@@ -16,7 +16,9 @@ from app.core.exceptions import NotFoundError
 class ProjectRepository(Protocol):
     """Port for project persistence operations."""
 
-    async def get_by_id(self, *, project_id: UUID) -> object | None:  # pragma: no cover - protocol stub
+    async def get_by_id(
+        self, *, project_id: UUID
+    ) -> object | None:  # pragma: no cover - protocol stub
         """Return the project with the given ID, or None when not found."""
         ...
 

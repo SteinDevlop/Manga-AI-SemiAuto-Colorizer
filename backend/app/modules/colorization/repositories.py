@@ -70,9 +70,7 @@ class MaskArtifactRepository:
 
     async def exists(self, artifact_id: UUID) -> bool:
         """Return ``True`` when a mask artifact with the given id exists."""
-        stmt: Select = (
-            select(MaskArtifact.id).where(MaskArtifact.id == artifact_id).limit(1)
-        )
+        stmt: Select = select(MaskArtifact.id).where(MaskArtifact.id == artifact_id).limit(1)
         result = await self.session.execute(stmt)
         return result.first() is not None
 
@@ -137,8 +135,6 @@ class ColorizationJobRepository:
 
     async def exists(self, job_id: UUID) -> bool:
         """Return ``True`` when a job with the given id exists."""
-        stmt: Select = (
-            select(ColorizationJob.id).where(ColorizationJob.id == job_id).limit(1)
-        )
+        stmt: Select = select(ColorizationJob.id).where(ColorizationJob.id == job_id).limit(1)
         result = await self.session.execute(stmt)
         return result.first() is not None

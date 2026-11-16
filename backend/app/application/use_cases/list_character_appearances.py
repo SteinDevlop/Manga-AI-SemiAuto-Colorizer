@@ -59,9 +59,7 @@ class ListCharacterAppearancesUseCase:
     ) -> None:
         self._character_appearance_repository = character_appearance_repository
 
-    async def execute(
-        self, character_id: UUID
-    ) -> ListCharacterAppearancesOutput:
+    async def execute(self, character_id: UUID) -> ListCharacterAppearancesOutput:
         """Execute the list character appearances use case.
 
         Raises:
@@ -88,15 +86,11 @@ class ListCharacterAppearancesUseCase:
                     id=str(appearance.id),
                     character_id=str(appearance.character_id),
                     page_id=str(appearance.page_id),
-                    panel_id=(
-                        str(appearance.panel_id) if appearance.panel_id else None
-                    ),
+                    panel_id=(str(appearance.panel_id) if appearance.panel_id else None),
                     confianza_deteccion=appearance.confianza_deteccion,
                     page_number=page_number,
                     panel_number=panel_number,
-                    created_at=appearance.created_at.isoformat()
-                    if appearance.created_at
-                    else None,
+                    created_at=appearance.created_at.isoformat() if appearance.created_at else None,
                 )
             )
 

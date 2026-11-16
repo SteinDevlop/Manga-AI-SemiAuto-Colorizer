@@ -79,9 +79,7 @@ class EditCharacterAttributeUseCase:
     ) -> None:
         self._character_attribute_repository = character_attribute_repository
 
-    async def execute(
-        self, input_data: EditCharacterAttributeInput
-    ) -> CharacterAttributeOutput:
+    async def execute(self, input_data: EditCharacterAttributeInput) -> CharacterAttributeOutput:
         """Execute the edit character attribute use case.
 
         Raises:

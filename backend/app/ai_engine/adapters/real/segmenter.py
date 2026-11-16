@@ -69,9 +69,7 @@ class RealSegmenter:
         raises :class:`FileNotFoundError` to surface that the weights are
         missing instead of failing silently.
         """
-        raise FileNotFoundError(
-            f"Segmenter weights not found at {self.MODEL_PATH}"
-        )
+        raise FileNotFoundError(f"Segmenter weights not found at {self.MODEL_PATH}")
 
     def _ensure_loaded(self) -> None:
         if not self._loaded or self._model is None:

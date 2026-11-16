@@ -16,7 +16,9 @@ from app.core.exceptions import NotFoundError
 class PageRepository(Protocol):
     """Port for page persistence operations."""
 
-    async def get_by_id(self, *, page_id: UUID) -> object | None:  # pragma: no cover - protocol stub
+    async def get_by_id(
+        self, *, page_id: UUID
+    ) -> object | None:  # pragma: no cover - protocol stub
         """Return the page with the given ID, or None when not found."""
         ...
 

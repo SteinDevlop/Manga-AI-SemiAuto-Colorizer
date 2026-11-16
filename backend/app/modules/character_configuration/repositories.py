@@ -29,17 +29,13 @@ class CharacterAttributeRepository:
 
     async def get(self, attribute_id: UUID) -> CharacterAttribute | None:
         """Return the attribute with the given id, or ``None`` if missing."""
-        stmt: Select = select(CharacterAttribute).where(
-            CharacterAttribute.id == attribute_id
-        )
+        stmt: Select = select(CharacterAttribute).where(CharacterAttribute.id == attribute_id)
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
     async def list(self, character_id: UUID | None = None) -> list[CharacterAttribute]:
         """Return attributes, optionally filtered by character id."""
-        stmt: Select = select(CharacterAttribute).order_by(
-            CharacterAttribute.created_at
-        )
+        stmt: Select = select(CharacterAttribute).order_by(CharacterAttribute.created_at)
         if character_id is not None:
             stmt = stmt.where(CharacterAttribute.character_id == character_id)
         result = await self.session.execute(stmt)
@@ -53,9 +49,7 @@ class CharacterAttributeRepository:
         await self.session.refresh(attribute)
         return attribute
 
-    async def update(
-        self, attribute_id: UUID, **kwargs: Any
-    ) -> CharacterAttribute | None:
+    async def update(self, attribute_id: UUID, **kwargs: Any) -> CharacterAttribute | None:
         """Update the attributes of the attribute with the given id."""
         attribute = await self.get(attribute_id)
         if attribute is None:
@@ -78,9 +72,7 @@ class CharacterAttributeRepository:
     async def exists(self, attribute_id: UUID) -> bool:
         """Return ``True`` when an attribute with the given id exists."""
         stmt: Select = (
-            select(CharacterAttribute.id)
-            .where(CharacterAttribute.id == attribute_id)
-            .limit(1)
+            select(CharacterAttribute.id).where(CharacterAttribute.id == attribute_id).limit(1)
         )
         result = await self.session.execute(stmt)
         return result.first() is not None
@@ -98,17 +90,13 @@ class CharacterPaletteRepository:
 
     async def get(self, palette_id: UUID) -> CharacterPalette | None:
         """Return the palette entry with the given id, or ``None`` if missing."""
-        stmt: Select = select(CharacterPalette).where(
-            CharacterPalette.id == palette_id
-        )
+        stmt: Select = select(CharacterPalette).where(CharacterPalette.id == palette_id)
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
     async def list(self, character_id: UUID | None = None) -> list[CharacterPalette]:
         """Return palette entries, optionally filtered by character id."""
-        stmt: Select = select(CharacterPalette).order_by(
-            CharacterPalette.created_at
-        )
+        stmt: Select = select(CharacterPalette).order_by(CharacterPalette.created_at)
         if character_id is not None:
             stmt = stmt.where(CharacterPalette.character_id == character_id)
         result = await self.session.execute(stmt)
@@ -122,9 +110,7 @@ class CharacterPaletteRepository:
         await self.session.refresh(palette)
         return palette
 
-    async def update(
-        self, palette_id: UUID, **kwargs: Any
-    ) -> CharacterPalette | None:
+    async def update(self, palette_id: UUID, **kwargs: Any) -> CharacterPalette | None:
         """Update the attributes of the palette entry with the given id."""
         palette = await self.get(palette_id)
         if palette is None:
@@ -146,10 +132,6 @@ class CharacterPaletteRepository:
 
     async def exists(self, palette_id: UUID) -> bool:
         """Return ``True`` when a palette entry with the given id exists."""
-        stmt: Select = (
-            select(CharacterPalette.id)
-            .where(CharacterPalette.id == palette_id)
-            .limit(1)
-        )
+        stmt: Select = select(CharacterPalette.id).where(CharacterPalette.id == palette_id).limit(1)
         result = await self.session.execute(stmt)
         return result.first() is not None

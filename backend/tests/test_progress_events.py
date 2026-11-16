@@ -13,7 +13,9 @@ from app.workers.tasks.colorization_tasks import (
 
 def test_progress_event_has_required_fields():
     """Cada evento de progreso debe tener job_id, stage, progress, message, timestamp."""
-    event = _progress_event(job_id="job-123", stage="preprocessing", progress=25, message="Detectando paneles")
+    event = _progress_event(
+        job_id="job-123", stage="preprocessing", progress=25, message="Detectando paneles"
+    )
     required = {"job_id", "stage", "progress", "message", "timestamp"}
     assert required.issubset(set(event.keys()))
     assert event["job_id"] == "job-123"
@@ -35,8 +37,11 @@ def test_progress_event_progress_range():
 def test_progress_event_task_id_when_provided():
     """task_id debe incluirse cuando se pasa explícitamente."""
     event = _progress_event(
-        job_id="job-1", stage="preprocessing", progress=10,
-        message="Etapa 1", task_id="task-abc",
+        job_id="job-1",
+        stage="preprocessing",
+        progress=10,
+        message="Etapa 1",
+        task_id="task-abc",
     )
     assert "task_id" in event
     assert event["task_id"] == "task-abc"

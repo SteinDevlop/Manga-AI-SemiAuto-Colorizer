@@ -74,9 +74,7 @@ class UpdateCharacterMemoryUseCase:
     ) -> None:
         self._character_memory_repository = character_memory_repository
 
-    async def execute(
-        self, input_data: UpdateCharacterMemoryInput
-    ) -> CharacterMemoryOutput:
+    async def execute(self, input_data: UpdateCharacterMemoryInput) -> CharacterMemoryOutput:
         """Execute the update character memory use case.
 
         Raises:
@@ -126,9 +124,7 @@ class UpdateCharacterMemoryUseCase:
             atributos_estables=updated.atributos_estables,
             atributos_escena=updated.atributos_escena,
             referencia_estable=updated.referencia_estable,
-            pagina_origen_id=(
-                str(updated.pagina_origen_id) if updated.pagina_origen_id else None
-            ),
+            pagina_origen_id=(str(updated.pagina_origen_id) if updated.pagina_origen_id else None),
             created_at=updated.created_at.isoformat() if updated.created_at else None,
             updated_at=updated.updated_at.isoformat() if updated.updated_at else None,
         )

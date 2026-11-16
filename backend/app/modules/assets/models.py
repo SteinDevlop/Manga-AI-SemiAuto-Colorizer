@@ -24,9 +24,7 @@ class Artifact(Base):
 
     __tablename__ = "artifacts"
 
-    artifact_id: Mapped[str] = mapped_column(
-        String, nullable=False, unique=True, index=True
-    )
+    artifact_id: Mapped[str] = mapped_column(String, nullable=False, unique=True, index=True)
     tipo: Mapped[str] = mapped_column(String, nullable=False)
     nombre_original: Mapped[str | None] = mapped_column(String, nullable=True)
     ruta_archivo: Mapped[str] = mapped_column(String, nullable=False)
