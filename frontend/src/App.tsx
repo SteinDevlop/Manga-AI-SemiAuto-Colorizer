@@ -2,7 +2,8 @@
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Layout } from "./components/Layout";
-import { Home } from "./pages/Home";
+import Home from "./pages/Home";
+import Dashboard from "./pages/Dashboard";
 import { Projects } from "./pages/Projects";
 import { Upload } from "./pages/Upload";
 import { Analysis } from "./pages/Analysis";
@@ -17,6 +18,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
+          <Route path="dashboard" element={<Dashboard />} />
           <Route path="projects" element={<Projects />} />
           <Route path="upload" element={<Upload />} />
           <Route path="analysis/:analysisId" element={<Analysis />} />
