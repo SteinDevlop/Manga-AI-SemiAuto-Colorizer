@@ -48,7 +48,7 @@ type AnalysisDetail = Analysis & {
   masks: Mask[];
 };
 
-export function Analysis(): JSX.Element {
+export function Analysis() {
   const { analysisId } = useParams<{ analysisId: string }>();
   const [analysis, setAnalysis] = useState<AnalysisDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -82,9 +82,6 @@ export function Analysis(): JSX.Element {
 
   const appearancesByCharacter = (characterId: string): Appearance[] =>
     (analysis?.appearances ?? []).filter((a) => a.character_id === characterId);
-
-  const masksByAppearance = (appearanceId: string): Mask[] =>
-    (analysis?.masks ?? []).filter((m) => m.appearance_id === appearanceId);
 
   const panelStyle = (panel: Panel): React.CSSProperties => ({
     position: "absolute",

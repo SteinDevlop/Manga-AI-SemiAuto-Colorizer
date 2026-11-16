@@ -27,7 +27,7 @@ describe("Analysis", () => {
     });
 
     render(
-      <MemoryRouter initialEntries={"/analysis/analysis-1"}>
+      <MemoryRouter initialEntries={["/analysis/analysis-1"]}>
         <Analysis />
       </MemoryRouter>
     );

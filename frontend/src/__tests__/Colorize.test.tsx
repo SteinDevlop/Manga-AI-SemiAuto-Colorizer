@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { Colorize } from "../pages/Colorize";
 import { MemoryRouter } from "react-router-dom";
 import { api } from "../api/client";
@@ -24,7 +24,7 @@ describe("Colorize", () => {
     });
 
     render(
-      <MemoryRouter initialEntries={"/colorize/analysis-1"}>
+      <MemoryRouter initialEntries={["/colorize/analysis-1"]}>
         <Colorize />
       </MemoryRouter>
     );

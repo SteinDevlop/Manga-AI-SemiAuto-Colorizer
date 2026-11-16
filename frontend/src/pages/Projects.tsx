@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { api } from "../api/client";
 import type { Project } from "../types";
 
-export function Projects(): JSX.Element {
+export function Projects() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

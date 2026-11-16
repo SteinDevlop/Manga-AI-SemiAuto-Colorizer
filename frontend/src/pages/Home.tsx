@@ -1,6 +1,6 @@
 /** Pantalla de inicio: lista de proyectos y botón para crear uno nuevo. */
 
-export function Home(): JSX.Element {
+export function Home() {
   return (
     <div className="page home">
       <h1>Proyectos</h1>

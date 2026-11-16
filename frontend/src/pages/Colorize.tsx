@@ -25,7 +25,7 @@ const initialView: ColorizeView = {
 
 const POLL_INTERVAL_MS = 2000;
 
-export function Colorize(): JSX.Element {
+export function Colorize() {
   const { id } = useParams<{ id: string }>();
   const [view, setView] = useState<ColorizeView>(initialView);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);

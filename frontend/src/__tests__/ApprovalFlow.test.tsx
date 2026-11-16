@@ -21,7 +21,7 @@ describe("Approve", () => {
     vi.mocked(api.post).mockResolvedValueOnce({ estado: "APPROVED" });
 
     render(
-      <MemoryRouter initialEntries={"/approve/analysis-1"}>
+      <MemoryRouter initialEntries={["/approve/analysis-1"]}>
         <Approve />
       </MemoryRouter>
     );

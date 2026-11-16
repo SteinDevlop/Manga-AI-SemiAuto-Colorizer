@@ -2,7 +2,7 @@
 
 import { Link } from "react-router-dom";
 
-export function Navbar(): JSX.Element {
+export function Navbar() {
   return (
     <nav className="navbar">
       <div className="navbar-brand">

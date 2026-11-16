@@ -11,7 +11,7 @@ import { Approve } from "./pages/Approve";
 import { Colorize } from "./pages/Colorize";
 import { History } from "./pages/History";
 
-export default function App(): JSX.Element {
+export default function App() {
   return (
     <BrowserRouter>
       <Routes>

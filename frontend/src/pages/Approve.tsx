@@ -26,7 +26,7 @@ const initialView: ApproveView = {
   approved: false,
 };
 
-export function Approve(): JSX.Element {
+export function Approve() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [view, setView] = useState<ApproveView>(initialView);
@@ -142,7 +142,7 @@ export function Approve(): JSX.Element {
                 backgroundColor: "#1e293b",
               }}
             >
-              <h3 style={{ margin: 0 0 0.5 0 }}>{character.nombre}</h3>
+              <h3 style={{ margin: "0 0 0.5rem 0" }}>{character.nombre}</h3>
               <p>Confidence: {character.confianza_identidad ?? "n/a"}</p>
 
               <section style={{ marginTop: 0.75 }}>

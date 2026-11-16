@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { ColorizationJob } from "../types";
 
-export function History(): JSX.Element {
+export function History() {
   const [jobs, setJobs] = useState<ColorizationJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

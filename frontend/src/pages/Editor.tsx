@@ -22,7 +22,7 @@ type PaletteRow = CharacterPalette & {
   hexValue: string;
 };
 
-export function Editor(): JSX.Element {
+export function Editor() {
   const { characterId } = useParams<{ characterId: string }>();
   const [character, setCharacter] = useState<Character | null>(null);
   const [attributes, setAttributes] = useState<AttributeRow[]>([]);
@@ -57,7 +57,7 @@ export function Editor(): JSX.Element {
     };
   }, [characterId]);
 
-  const initializeRows = (): void {
+  const initializeRows = (): void => {
     if (!character) return;
     const attributeRows: AttributeRow[] = ATTRIBUTE_NAMES.map((name) => ({
       id: "",

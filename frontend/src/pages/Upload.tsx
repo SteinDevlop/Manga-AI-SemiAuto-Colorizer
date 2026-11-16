@@ -6,7 +6,7 @@ import type { Project } from "../types";
 
 const ACCEPTED_MIME_TYPES = ["image/png", "image/jpeg", "image/webp"];
 
-export function Upload(): JSX.Element {
+export function Upload() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
