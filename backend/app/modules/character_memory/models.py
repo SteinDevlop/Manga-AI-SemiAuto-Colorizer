@@ -8,10 +8,11 @@ and supported parameters.
 
 from __future__ import annotations
 
+import uuid
 from typing import Any
 
-from sqlalchemy import JSON, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import ForeignKey, JSON, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.infrastructure.database.base import Base
 
@@ -35,3 +36,32 @@ class ModelManifest(Base):
     requisitos_hardware: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     estado: Mapped[str] = mapped_column(String(50), nullable=False, default="disponible")
     parametros_soportados: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+
+
+class CharacterMemory(Base):
+    """Memoria estable de un personaje entre páginas y viñetas.
+
+    Table ``character_memory``. Almacena embeddings y referencias estables
+    para reproducir la consistencia cromática y de identidad a lo largo del
+    manga. No almacena imágenes binarias.
+    """
+
+    __tablename__ = "character_memory"
+
+    character_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("characters.id"),
+        nullable=False,
+        index=True,
+    )
+    embedding: Mapped[str | None] = mapped_column(String, nullable=True)
+    embedding_model: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    atributos_estables: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    atributos_escena: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    referencia_estable: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    pagina_origen_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("pages.id"),
+        nullable=True,
+        index=True,
+    )
+
+    character: Mapped["Character"] = relationship("Character")
