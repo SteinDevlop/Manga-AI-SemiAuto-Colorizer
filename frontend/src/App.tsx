@@ -6,7 +6,7 @@ import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
 import { Upload } from "./pages/Upload";
-import { Analysis } from "./pages/Analysis";
+import Analysis from "./pages/Analysis";
 import { Editor } from "./pages/Editor";
 import { Approve } from "./pages/Approve";
 import { Colorize } from "./pages/Colorize";
