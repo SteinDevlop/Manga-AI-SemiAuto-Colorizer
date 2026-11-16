@@ -21,11 +21,12 @@ S10: docs/architecture/ con diagramas Mermaid. [docs/planes/P0-arquitectura-boot
 
 ## Tasks
 
-T1 — Backend bootstrap: estructura backend/, pyproject.toml, FastAPI app base, settings, configuración. Route: delegated (parallelism). Linked: S1-S3, S5. Status: pending.
-T2 — Frontend bootstrap: estructura frontend/, package.json, Vite, React + TypeScript, pantalla placeholder. Route: delegated (parallelism). Linked: S1, S3. Status: pending.
-T3 — Infra/Docker bootstrap: docker/, docker-compose.yml, Dockerfiles. Route: delegated (parallelism). Linked: S2. Status: pending.
-T4 — Documentación y contratos: docs/architecture/ Mermaid, ADR, DTO/contratos, README de desarrollo. Route: delegated (parallelism). Linked: S4-S10. Status: pending.
+T1 — Backend bootstrap: estructura backend/, pyproject.toml, FastAPI app base, settings, configuración. Route: delegated (parallelism). Linked: S1-S3, S5. Status: done. Commit: b11b07f.
+T2 — Frontend bootstrap: estructura frontend/, package.json, Vite, React + TypeScript, pantalla placeholder. Route: delegated (parallelism). Linked: S1, S3. Status: done. Commit: b11b07f.
+T3 — Infra/Docker bootstrap: docker/, docker-compose.yml, Dockerfiles. Route: delegated (parallelism). Linked: S2. Status: done. Commit: b11b07f.
+T4 — Documentación y contratos: docs/architecture/ Mermaid, ADR, DTO/contratos, README de desarrollo. Route: delegated (parallelism). Linked: S4-S10. Status: done. Commit: b11b07f.
 
 ## Log
 
 L1: "Entonces inicia el plan de trabajo y delega en múltiples agentes para maximizar resultados" (usuario, 15-nov-2026)
+L2: P0 completado: 4 writers en paralelo (backend, frontend, infra/docker, docs/contratos), commit b11b07f en feature/p0-bootstrap. Todos los specs S1-S10 cubiertos. Docker compose config validado. (15-nov-2026)
