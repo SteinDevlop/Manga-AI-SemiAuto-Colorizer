@@ -9,6 +9,9 @@ import { Upload } from "./pages/Upload";
 import Analysis from "./pages/Analysis";
 import Masks from "./pages/Masks";
 import Editor from "./pages/Editor";
+import Jobs from "./pages/Jobs";
+import Models from "./pages/Models";
+import Settings from "./pages/Settings";
 import Review from "./pages/Review";
 import Colorize from "./pages/Colorize";
 import History from "./pages/History";
@@ -28,6 +31,9 @@ export default function App() {
           <Route path="approve/:analysisId" element={<Review />} />
           <Route path="colorize/:analysisId" element={<Colorize />} />
           <Route path="history" element={<History />} />
+          <Route path="jobs" element={<Jobs />} />
+          <Route path="models" element={<Models />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>
     </BrowserRouter>
