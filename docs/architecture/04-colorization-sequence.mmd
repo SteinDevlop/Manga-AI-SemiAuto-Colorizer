@@ -1,0 +1,35 @@
+```mermaid
+sequenceDiagram
+    actor U as Usuario
+    participant FE as Frontend
+    participant API as FastAPI
+    participant DB as PostgreSQL
+    participant Q as Redis/Celery
+    participant GPU as Worker GPU
+    participant AI as Colorization Engine
+    participant FS as Storage
+
+    U->>FE: Edita identidad, atributos y paleta
+    FE->>API: PATCH/PUT configuración
+    API->>DB: Persistir cambios
+    U->>FE: Aprobar configuración
+    FE->>API: POST /analysis/{id}/approve
+    API->>DB: Validar personajes y configuración
+    API->>DB: Marcar análisis como APPROVED
+    U->>FE: Solicitar colorización
+    FE->>API: POST /colorizations
+    API->>DB: Validar aprobación y crear job
+    API->>Q: Encolar job
+    API-->>FE: 202 Accepted + job_id
+    Q->>GPU: Ejecutar colorización
+    GPU->>FS: Leer original, máscaras y referencias
+    GPU->>AI: Inferencia condicionada
+    AI-->>GPU: Imagen generada
+    GPU->>FS: Guardar resultado
+    GPU->>DB: Marcar job COMPLETED
+    FE-->>U: Mostrar resultado
+```
+
+**Source:** arc42.md §6.3 Secuencia: aprobación y colorización
+
+**Purpose:** Shows the human-in-the-loop colorization flow: the user edits identity, attributes, and palette; the API persists changes; the user approves the configuration via POST /analysis/{id}/approve; the API validates and marks the analysis APPROVED; the user requests colorization via POST /colorizations; the API validates approval, creates a job, enqueues it, and returns 202 Accepted with job_id. The GPU worker reads the original, masks, and references, runs conditioned inference through the AI engine, stores the result, and marks the job COMPLETED.

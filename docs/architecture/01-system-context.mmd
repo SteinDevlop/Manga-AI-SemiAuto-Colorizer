@@ -1,0 +1,20 @@
+```mermaid
+flowchart LR
+    U[Usuario] -->|Carga página / edita paleta| UI[Frontend web]
+    UI <-->|REST / WebSocket| API[Backend API]
+    API --> DB[(PostgreSQL)]
+    API --> FS[(Almacenamiento local)]
+    API --> Q[(Redis / cola)]
+    Q --> CPU[Worker CPU]
+    Q --> GPU[Worker GPU]
+    CPU --> FS
+    GPU --> FS
+    CPU --> DB
+    GPU --> DB
+    GPU -->|Adaptadores| AI[Modelos de IA locales]
+    ML[Ingeniero ML] -->|Modelos, pesos y evaluación| AI
+```
+
+**Source:** arc42.md §3.1 Contexto del sistema
+
+**Purpose:** Shows the system boundary and the actors/systems that interact with Manga Colorizer: the end user through the frontend web UI, the FastAPI backend, PostgreSQL, local storage, the Redis/Celery queue, CPU and GPU workers, local AI models, and the ML engineer who supplies models and runs evaluation.

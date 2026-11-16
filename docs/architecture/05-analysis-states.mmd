@@ -1,0 +1,17 @@
+```mermaid
+stateDiagram-v2
+    [*] --> UPLOADED
+    UPLOADED --> ANALYSIS_PENDING
+    ANALYSIS_PENDING --> ANALYZING
+    ANALYZING --> REVIEW_REQUIRED
+    ANALYZING --> ANALYSIS_FAILED
+    ANALYSIS_FAILED --> ANALYSIS_PENDING: Reintentar
+    REVIEW_REQUIRED --> EDITING
+    EDITING --> REVIEW_REQUIRED
+    REVIEW_REQUIRED --> APPROVED
+    APPROVED --> [*]
+```
+
+**Source:** arc42.md §6.4 Estados de análisis y trabajos (analysis state machine)
+
+**Purpose:** Defines the allowed analysis states and transitions. A page starts at UPLOADED, moves to ANALYSIS_PENDING when queued, to ANALYZING while the worker processes, then to REVIEW_REQUIRED when proposals are ready. Failed analysis can be retried back to ANALYSIS_PENDING. The user edits in EDITING, returns to REVIEW_REQUIRED, or approves to reach APPROVED, which is the terminal state permitting colorization.

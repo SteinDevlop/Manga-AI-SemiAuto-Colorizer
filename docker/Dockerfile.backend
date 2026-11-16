@@ -1,0 +1,38 @@
+# docker/Dockerfile.backend
+#
+# Imagen del monolito: API FastAPI (Python 3.11) + workers Celery del mismo
+# monolito. Los workers reutilizan esta misma base; solo cambian el comando.
+#
+# Construir desde la raiz del repositorio:
+#   docker build -f docker/Dockerfile.backend -t manga-backend .
+# =====================================================================
+
+FROM python:3.11-slim AS backend
+
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Herramientas de compilacion para dependencias con extensiones nativas
+# (psycopg2, etc.) y cliente de postgres para healthchecks si se requiere.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential libpq-dev curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Dependencias Python del monolito (api + celery workers).
+# Gestionado por T1 mediante backend/pyproject.toml.
+COPY backend/pyproject.toml ./pyproject.toml
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -e .[dev]
+
+# Codigo del monolito (misma imagen para api, worker-cpu y worker-gpu base).
+COPY backend/ ./backend
+
+WORKDIR /app/backend
+EXPOSE 8000
+
+# Punto de entrada del API. Sobrescrito por worker-cpu / worker-gpu.
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

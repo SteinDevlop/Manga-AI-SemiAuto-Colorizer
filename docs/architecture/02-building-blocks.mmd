@@ -1,0 +1,50 @@
+```mermaid
+flowchart TB
+    subgraph Client["Cliente local"]
+      FE[Frontend React + TypeScript]
+    end
+
+    subgraph Backend["Backend"]
+      API[FastAPI]
+      APP[Casos de uso / dominio]
+      DB[(PostgreSQL)]
+      REDIS[(Redis)]
+      STORE[(Storage local)]
+    end
+
+    subgraph Workers["Procesamiento asíncrono"]
+      CW[Worker CPU]
+      GW[Worker GPU]
+    end
+
+    subgraph Engine["AI Engine"]
+      DET[Detection adapters]
+      SEG[Segmentation adapters]
+      ID[Identity matching]
+      COND[Color conditioning]
+      GEN[Generative models]
+      REF[Refinement / upscaling]
+    end
+
+    FE <-->|REST + WebSocket| API
+    API --> APP
+    APP <--> DB
+    APP <--> STORE
+    APP --> REDIS
+    REDIS --> CW
+    REDIS --> GW
+    CW <--> STORE
+    GW <--> STORE
+    GW --> DET
+    GW --> SEG
+    GW --> ID
+    GW --> COND
+    GW --> GEN
+    GW --> REF
+    DET --> SEG --> ID
+    ID --> COND --> GEN --> REF
+```
+
+**Source:** arc42.md §5.1 Nivel 1: contenedores lógicos
+
+**Purpose:** Shows the logical containers at level 1: the local client (React + TypeScript frontend), the backend (FastAPI, application/domain layer, PostgreSQL, Redis, local storage), the asynchronous workers (CPU and GPU), and the decoupled AI engine (detection, segmentation, identity matching, conditioning, generative models, refinement/upscaling) invoked through adapters by the GPU worker.

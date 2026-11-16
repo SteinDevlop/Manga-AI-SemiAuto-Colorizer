@@ -1,0 +1,176 @@
+# docker/docker-compose.yml
+#
+# Manga Colorizer - Infraestructura local (P0, T3)
+#
+# Levantar desde la raiz del repositorio:
+#   docker compose -f docker/docker-compose.yml up -d
+#
+# El archivo `.env` (copia de docker/.env.example) debe estar en docker/,
+# junto a docker-compose.yml. Esta compose no expone PostgreSQL ni Redis al host.
+#
+# Arquitectura: monolito modular + workers asincronos (docs/arc42.md seccion 7).
+# Los workers son procesos independientes del MISMO monolito, no microservicios.
+# =====================================================================
+
+services:
+  # ------------------------------------------------------------------
+  # PostgreSQL: metadatos del monolito (Proyecto, Pagina, Panel, Job, etc.)
+  # Red interna solamente. Nunca publicado al host.
+  # ------------------------------------------------------------------
+  postgres:
+    image: postgres:15-alpine
+    container_name: manga-postgres
+    env_file: .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - manga-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # ------------------------------------------------------------------
+  # Redis: broker de Celery y cache compartida
+  # Red interna solamente. Nunca publicado al host.
+  # ------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: manga-redis
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    networks:
+      - manga-internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  # ------------------------------------------------------------------
+  # API FastAPI: punto de entrada HTTP del monolito.
+  # Solo localhost (127.0.0.1:8000).
+  # No ejecuta inferencia pesada; solo orquesta y encola trabajos.
+  # ------------------------------------------------------------------
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+    container_name: manga-api
+    env_file: .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
+      API_HOST: ${API_HOST}
+      API_PORT: ${API_PORT}
+      SECRET_KEY: ${SECRET_KEY}
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - manga-internal
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+  # ------------------------------------------------------------------
+  # Worker CPU: procesos independientes del mismo monolito.
+  # Consume colas de CPU (analisis, paleta, etc.) de Redis.
+  # Sin puertos publicos.
+  # ------------------------------------------------------------------
+  worker-cpu:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.worker-cpu
+    container_name: manga-worker-cpu
+    env_file: .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
+      CELERY_QUEUES: ${WORKER_CPU_QUEUES}
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - manga-internal
+    command: ["celery", "-A", "app.workers.celery_app", "worker", "-Q", "${WORKER_CPU_QUEUES}", "-n", "cpu@%h"]
+
+  # ------------------------------------------------------------------
+  # Worker GPU: procesos independientes del mismo monolito.
+  # Consume la cola de colorizacion de Redis. Requiere runtime NVIDIA.
+  # Sin puertos publicos.
+  #
+  # COMPATIBILIDAD GPU (docs/arc42.md seccion 7.4):
+  #   - Requiere controladores NVIDIA, CUDA, PyTorch con soporte CUDA y
+  #     NVIDIA Container Toolkit en el host.
+  #   - Si esa combinacion no esta disponible, el worker GPU debe
+  #     ejecutarse en el host conectandose al broker Redis local.
+  # ------------------------------------------------------------------
+  worker-gpu:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.worker-gpu
+    container_name: manga-worker-gpu
+    env_file: .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
+      CELERY_QUEUES: ${WORKER_GPU_QUEUES}
+      CUDA_VISIBLE_DEVICES: "all"
+      NVIDIA_VISIBLE_DEVICES: "all"
+    depends_on:
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks:
+      - manga-internal
+    command: ["celery", "-A", "app.workers.celery_app", "worker", "-Q", "${WORKER_GPU_QUEUES}", "-n", "gpu@%h"]
+
+  # ------------------------------------------------------------------
+  # Frontend: servidor de desarrollo Vite.
+  # Solo localhost (127.0.0.1:5173).
+  # ------------------------------------------------------------------
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+    container_name: manga-frontend
+    env_file: .env
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+      VITE_PORT: ${VITE_PORT}
+    ports:
+      - "127.0.0.1:5173:5173"
+    depends_on:
+      api:
+        condition: service_started
+    networks:
+      - manga-internal
+    command: ["sh", "-c", "npm ci && npm run dev -- --host 0.0.0.0 --port 5173"]
+
+volumes:
+  postgres_data:
+
+networks:
+  manga-internal:
+    driver: bridge

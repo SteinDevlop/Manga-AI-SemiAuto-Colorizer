@@ -1,0 +1,17 @@
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING
+    PENDING --> PREPROCESSING
+    PREPROCESSING --> COLORIZING
+    COLORIZING --> REFINING
+    REFINING --> COMPLETED
+    PENDING --> CANCELLED
+    PREPROCESSING --> FAILED
+    COLORIZING --> FAILED
+    REFINING --> FAILED
+    FAILED --> PENDING: Reintento explícito
+```
+
+**Source:** arc42.md §6.4 Estados de análisis y trabajos (colorization job state machine)
+
+**Purpose:** Defines the allowed colorization job states and transitions. A job starts at PENDING, advances through PREPROCESSING, COLORIZING, and REFINING to COMPLETED. It can be cancelled from PENDING. Any processing stage can fail to FAILED, and an explicit retry returns the job to PENDING. Internal stages may be added without changing the public states exposed to the frontend.

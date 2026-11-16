@@ -1,0 +1,31 @@
+```mermaid
+sequenceDiagram
+    actor U as Usuario
+    participant FE as Frontend
+    participant API as FastAPI
+    participant DB as PostgreSQL
+    participant Q as Redis/Celery
+    participant W as Worker
+    participant AI as AI Engine
+    participant FS as Storage
+
+    U->>FE: Selecciona imagen
+    FE->>API: POST /pages
+    API->>API: Validar MIME, tamaño y dimensiones
+    API->>FS: Guardar original
+    API->>DB: Crear Page(status=ANALYSIS_PENDING)
+    API->>Q: Encolar analyze_page(page_id)
+    API-->>FE: 202 Accepted + page_id
+    Q->>W: Ejecutar análisis
+    W->>FS: Leer original
+    W->>AI: Detectar paneles/personajes
+    AI-->>W: Detecciones y máscaras
+    W->>FS: Guardar artefactos
+    W->>DB: Guardar paneles, apariciones y propuestas
+    W->>DB: Page(status=REVIEW_REQUIRED)
+    FE-->>U: Mostrar personajes detectados
+```
+
+**Source:** arc42.md §6.2 Secuencia: análisis de página
+
+**Purpose:** Shows the end-to-end analysis flow: the user selects an image, the frontend posts it to the API, the API validates and stores the original, creates a Page record, enqueues the analysis task, and returns 202 Accepted with page_id. The worker reads the image, invokes the AI engine for panel/character detection and masks, persists artifacts and proposals, and marks the page as ready for review.

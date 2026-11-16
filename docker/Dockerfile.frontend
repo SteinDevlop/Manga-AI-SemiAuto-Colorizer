@@ -1,0 +1,27 @@
+# docker/Dockerfile.frontend
+#
+# Imagen Node + Vite para el frontend (React + TypeScript, gestionado por T2).
+# Sirve el servidor de desarrollo de Vite en el puerto 5173.
+#
+# Construir desde la raiz del repositorio:
+#   docker build -f docker/Dockerfile.frontend -t manga-frontend .
+# =====================================================================
+
+FROM node:20-alpine AS frontend
+
+WORKDIR /app
+
+ENV NODE_ENV=development
+
+# Dependencias del frontend
+COPY frontend/package.json frontend/package-lock.json* ./
+RUN npm ci
+
+# Codigo fuente del frontend
+COPY frontend/ ./
+
+EXPOSE 5173
+
+# Servidor de desarrollo de Vite, accesible dentro del contenedor.
+# El puerto publicado en compose es 127.0.0.1:5173:5173 (solo localhost).
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]

@@ -1,0 +1,39 @@
+[project]
+name = "manga-colorizer-backend"
+version = "0.1.0"
+description = "Backend FastAPI monolito modular para Manga Colorizer"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi==0.115.0",
+    "sqlalchemy==2.0.36",
+    "alembic==1.13.3",
+    "celery==5.4.0",
+    "redis==5.0.1",
+    "pydantic==2.9.2",
+    "pydantic-settings==2.4.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.3.2",
+    "ruff==0.8.0",
+    "mypy==1.13.0",
+]
+
+[build-system]
+requires = ["setuptools>=68.0.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["app"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "C4", "PL", "PLC", "PLE", "PLR", "TRY"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true

@@ -1,0 +1,51 @@
+# docker/Dockerfile.worker-gpu
+#
+# Imagen del worker Celery GPU del monolito Manga Colorizer.
+# Proceso independiente del mismo monolito: consume la cola de
+# colorizacion del broker Redis y ejecuta inferencia con aceleracion CUDA.
+#
+# Construir desde la raiz del repositorio (solo en hosts con NVIDIA):
+#   docker build -f docker/Dockerfile.worker-gpu -t manga-worker-gpu .
+#
+# =====================================================================
+# COMPATIBILIDAD GPU (docs/arc42.md seccion 7.4):
+#   - Requiere controladores NVIDIA, CUDA, PyTorch con soporte CUDA y
+#     NVIDIA Container Toolkit en el host.
+#   - La ejecucion del worker GPU debe validarse previamente. Si esa
+#     combinacion complica el entorno, el worker GPU puede ejecutarse
+#     en el host conectandose al broker Redis local.
+# =====================================================================
+
+FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04 AS worker-gpu
+
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    DEBIAN_FRONTEND=noninteractive \
+    PATH=/opt/venv/bin:$PATH
+
+# Python 3.11 no esta en los repositorios base de Ubuntu 22.04; se usa el
+# PPA de deadsnakes. Valida que esta combinacion funcione con tu CUDA/PyTorch.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    software-properties-common curl ca-certificates \
+    && add-apt-repository -y ppa:deadsnakes/ppa \
+    && apt-get update && apt-get install -y --no-install-recommends \
+    python3.11 python3.11-dev python3.11-venv build-essential libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN python3.11 -m venv /opt/venv
+
+COPY backend/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+COPY backend/ ./backend
+
+WORKDIR /app/backend
+
+# Cola de colorizacion definida en .env (WORKER_GPU_QUEUES).
+# Sin puertos publicos. GPU reservada mediante deploy.resources en compose.
+CMD ["celery", "-A", "app.workers.celery_app", "worker", "-Q", "${WORKER_GPU_QUEUES}", "-n", "gpu@%h"]

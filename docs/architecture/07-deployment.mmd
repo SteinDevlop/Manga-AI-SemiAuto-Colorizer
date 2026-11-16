@@ -1,0 +1,30 @@
+```mermaid
+flowchart TB
+    subgraph Host["Equipo del usuario"]
+      Browser["Navegador<br/>localhost:5173"]
+      subgraph Compose["Docker Compose / procesos locales"]
+        FE["Frontend<br/>:5173"]
+        API["FastAPI<br/>:8000"]
+        PG[("PostgreSQL<br/>:5432")]
+        R[("Redis<br/>:6379")]
+        CPU["Worker CPU"]
+      end
+      GPU["Worker GPU<br/>Host o contenedor CUDA"]
+      FS[("Volúmenes locales")]
+      MODELS[("Modelos y pesos")]
+    end
+    Browser --> FE
+    FE --> API
+    API <--> PG
+    API <--> R
+    API <--> FS
+    R --> CPU
+    R --> GPU
+    CPU <--> FS
+    GPU <--> FS
+    GPU --> MODELS
+```
+
+**Source:** arc42.md §7.1 Despliegue local inicial
+
+**Purpose:** Shows the initial local deployment: a single user machine running the browser (localhost:5173), the frontend, FastAPI (8000), PostgreSQL (5432), Redis (6379), and a CPU worker under Docker Compose/local processes, plus the GPU worker (host or CUDA container), local volumes for storage, and a separate models/weights directory. Browser reaches the frontend; the frontend reaches the API; the API reaches PostgreSQL, Redis, and storage; Redis reaches CPU and GPU workers; workers reach storage; the GPU worker reaches models.

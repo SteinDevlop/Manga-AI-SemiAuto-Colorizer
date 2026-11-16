@@ -1,0 +1,33 @@
+# docker/Dockerfile.worker-cpu
+#
+# Imagen del worker Celery CPU del monolito Manga Colorizer.
+# Proceso independiente del mismo monolito: consume colas de CPU
+# (analisis de viñetas, paleta, etc.) del broker Redis.
+#
+# Construir desde la raiz del repositorio:
+#   docker build -f docker/Dockerfile.worker-cpu -t manga-worker-cpu .
+# =====================================================================
+
+FROM python:3.11-slim AS worker-cpu
+
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential libpq-dev curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY backend/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+COPY backend/ ./backend
+
+WORKDIR /app/backend
+
+# Colas de trabajo definidas en .env (WORKER_CPU_QUEUES). Sin puertos publicos.
+CMD ["celery", "-A", "app.workers.celery_app", "worker", "-Q", "${WORKER_CPU_QUEUES}", "-n", "cpu@%h"]
