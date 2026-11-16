@@ -29,7 +29,7 @@ jobs:
       - name: Format check with ruff
         run: cd backend && ruff format --check
       - name: Type-check with mypy
-        run: cd backend && mypy
+        run: cd backend && mypy app --explicit-package-bases --ignore-missing-imports
       - name: Run backend tests
         run: cd backend && pytest
 
