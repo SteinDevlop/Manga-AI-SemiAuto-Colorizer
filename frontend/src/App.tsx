@@ -11,7 +11,7 @@ import Masks from "./pages/Masks";
 import Editor from "./pages/Editor";
 import Review from "./pages/Review";
 import Colorize from "./pages/Colorize";
-import { History } from "./pages/History";
+import History from "./pages/History";
 
 export default function App() {
   return (
