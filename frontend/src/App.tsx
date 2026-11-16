@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
 import { Upload } from "./pages/Upload";
 import Analysis from "./pages/Analysis";
+import Masks from "./pages/Masks";
 import Editor from "./pages/Editor";
 import { Approve } from "./pages/Approve";
 import { Colorize } from "./pages/Colorize";
@@ -23,6 +24,7 @@ export default function App() {
           <Route path="upload" element={<Upload />} />
           <Route path="analysis/:analysisId" element={<Analysis />} />
           <Route path="editor/:characterId" element={<Editor />} />
+          <Route path="masks" element={<Masks />} />
           <Route path="approve/:analysisId" element={<Approve />} />
           <Route path="colorize/:analysisId" element={<Colorize />} />
           <Route path="history" element={<History />} />
