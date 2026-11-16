@@ -1472,3 +1472,35 @@ body::before {
     padding-left: 0;
   }
 }
+
+/* Character & Color Editor */
+.attr-row {
+  display: grid;
+  grid-template-columns: 110px 32px 1fr 88px 110px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.swatch-input {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--ink);
+  padding: 0;
+  cursor: pointer;
+  background: none;
+}
+
+.hex-input {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  border: 1px solid var(--border-strong);
+  background: var(--paper);
+  width: 100%;
+}
+
+.color-uncertain {
+  color: #7a5c00;
+}

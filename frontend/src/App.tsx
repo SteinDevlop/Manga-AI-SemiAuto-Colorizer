@@ -7,7 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
 import { Upload } from "./pages/Upload";
 import Analysis from "./pages/Analysis";
-import { Editor } from "./pages/Editor";
+import Editor from "./pages/Editor";
 import { Approve } from "./pages/Approve";
 import { Colorize } from "./pages/Colorize";
 import { History } from "./pages/History";
