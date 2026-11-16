@@ -1,0 +1,29 @@
+version: 2
+updates:
+  # Backend: dependencias Python (pyproject.toml)
+  - package-ecosystem: "pip"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/Argentina/Buenos_Aires"
+    open-pull-requests-limit: 5
+    groups:
+      python-backend:
+        patterns:
+          - "*"
+
+  # Frontend: dependencias Node (package.json)
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/Argentina/Buenos_Aires"
+    open-pull-requests-limit: 5
+    groups:
+      node-frontend:
+        patterns:
+          - "*"
