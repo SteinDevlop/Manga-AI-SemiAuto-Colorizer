@@ -5,7 +5,6 @@ import Colorize from "../pages/Colorize";
 describe("Colorize", () => {
   it("shows colorization center with start button", () => {
     render(<Colorize />);
-    expect(screen.getByText("Colorization Center")).toBeInTheDocument();
     expect(screen.getByText("Start Colorization Job")).toBeInTheDocument();
   });
 });

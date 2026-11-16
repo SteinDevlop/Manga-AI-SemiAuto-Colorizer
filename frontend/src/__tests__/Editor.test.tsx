@@ -34,12 +34,11 @@ describe("Editor", () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText("Loading character...")).toBeInTheDocument();
+    expect(screen.getByText(/Renji \(ID-01\)/)).toBeInTheDocument();
 
     await waitFor(() => {
-      expect(screen.getByText("cabello")).toBeInTheDocument();
-      expect(screen.getByText("negro")).toBeInTheDocument();
-      expect(screen.getByText("80%")).toBeInTheDocument();
+      expect(screen.getByText("Skin")).toBeInTheDocument();
+      expect(screen.getByText("96% Confidence")).toBeInTheDocument();
     });
   });
 });

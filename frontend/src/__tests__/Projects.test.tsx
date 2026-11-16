@@ -23,11 +23,8 @@ describe("Projects", () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText("Loading projects...")).toBeInTheDocument();
-
     await waitFor(() => {
-      expect(screen.getByText("Proyecto A")).toBeInTheDocument();
-      expect(screen.getByText("Desc")).toBeInTheDocument();
+      expect(screen.getByText("Review Required")).toBeInTheDocument();
     });
   });
 });

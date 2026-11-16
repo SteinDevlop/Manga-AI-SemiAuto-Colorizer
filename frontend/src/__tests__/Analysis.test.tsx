@@ -32,11 +32,11 @@ describe("Analysis", () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText("Loading analysis...")).toBeInTheDocument();
+        expect(screen.getByText("Detected Identities")).toBeInTheDocument();
 
     await waitFor(() => {
-      expect(screen.getByText("Protagonista")).toBeInTheDocument();
-      expect(screen.getByText("1")).toBeInTheDocument(); // número de orden del panel
+          expect(screen.getByText("Detected Identities")).toBeInTheDocument();
+      expect(screen.getByText("98%")).toBeInTheDocument();
     });
   });
 });

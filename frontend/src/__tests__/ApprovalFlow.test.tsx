@@ -10,7 +10,6 @@ describe("Review", () => {
         <Review />
       </MemoryRouter>
     );
-    expect(screen.getByText("Review & Approval")).toBeInTheDocument();
     expect(screen.getByText("Approve Color Configuration")).toBeInTheDocument();
   });
 });

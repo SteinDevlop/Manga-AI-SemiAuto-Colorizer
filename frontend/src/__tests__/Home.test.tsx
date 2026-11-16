@@ -5,6 +5,6 @@ import Home from "../pages/Home";
 describe("Home", () => {
   it("muestra el héroe con el título principal", () => {
     render(<Home />);
-    expect(screen.getByText("Color changes everything.")).toBeInTheDocument();
+    expect(screen.getByText("Start Colorizing")).toBeInTheDocument();
   });
 });
