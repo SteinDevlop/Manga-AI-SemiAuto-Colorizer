@@ -155,4 +155,27 @@ export const api = {
       // No establecer Content-Type; el navegador lo pone con el boundary de FormData
       headers: {},
     }),
+  getAnalysis: (analysisId: string) =>
+    request<{
+      analysis_id: string;
+      page_id: string;
+      estado: string;
+      confianza_global: number | null;
+      version_modelo: string | null;
+      panels: Array<{ id: string; page_id: string; numero_orden: number; x: number; y: number; ancho: number; alto: number; confianza_deteccion: number | null }>;
+      characters: Array<{ id: string; nombre: string; descripcion: string | null; confianza_identidad: number | null }>;
+      appearances: Array<{ id: string; page_id: string; character_id: string; panel_id: string | null; confianza_deteccion: number | null }>;
+      masks: Array<{ id: string; appearance_id: string; tipo_mascara: string; ruta_archivo: string; hash_sha256: string; ancho: number | null; alto: number | null }>;
+    }>(`${API_BASE}/analysis/${analysisId}`),
+  approveAnalysis: (analysisId: string) =>
+    request<{ analysis_id: string; estado: string }>(`${API_BASE}/analysis/${analysisId}/approve`, {
+      method: "POST",
+    }),
+  createColorization: (analysisId: string) =>
+    request<{ job_id: string; analysis_id: string; estado: string; progreso: number; mensaje: string | null }>(`${API_BASE}/colorizations`, {
+      method: "POST",
+      body: JSON.stringify({ analysis_id: analysisId }),
+    }),
+  getColorization: (jobId: string) =>
+    request<{ job_id: string; analysis_id: string; estado: string; progreso: number; mensaje: string | null; ruta_resultado: string | null; version_modelo: string | null }>(`${API_BASE}/colorizations/${jobId}`),
 };

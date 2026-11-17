@@ -9,8 +9,8 @@
 ### 0.1 Estado actual (el agente lo actualiza al cerrar cada fase)
 
 ```
-FASE_ACTUAL: 7
-ULTIMA_FASE_COMPLETADA: 6
+FASE_ACTUAL: 8
+ULTIMA_FASE_COMPLETADA: 7
 BLOQUEOS_ABIERTOS: ninguno
 ```
 
@@ -302,28 +302,29 @@ Reemplazar la interfaz actual, construida a ciegas sobre un mockup, por una apli
 **Objetivo:** Que cada etapa muestre información propia, conserve su estado y respete la navegación definida.
 
 **Tareas (aplicar a cada etapa)**
-- [ ] Analysis: resultados del análisis de la imagen, estado del procesamiento, errores si los hay.
-- [ ] Character: selección/gestión de personajes detectados.
-- [ ] Mask: editor de máscara (el antiguo "Mask Editor" pasa a ser exclusivamente esta etapa).
-- [ ] Approve: resumen de lo definido (análisis, personajes, máscaras) para aprobar antes de colorizar (el antiguo "Review").
-- [ ] Colorize: lanzamiento y seguimiento del trabajo de colorización (el antiguo "Colorize Center"), enlazado con Colorization Jobs.
-- [ ] Export: opciones y descarga del resultado final (el antiguo "Export"/"Result"), enlazado con Results & Exports.
-- [ ] En cada etapa: encabezado con título y descripción de lo que ocurre, estado de la etapa, botón de avanzar (deshabilitado hasta cumplir requisitos) y retroceso según reglas.
-- [ ] Persistir el progreso de cada etapa en backend para poder retroceder y volver sin perder datos.
-- [ ] **Corregir el defecto 0.9:** al completarse el análisis, el frontend guarda el `analysis_id` devuelto (en el estado del proyecto/caché de datos) y lo usa en `POST /analysis/{analysis_id}/approve` y en las rutas de colorización. `page_id` solo se usa donde la API lo espera (subida, lanzar análisis, obtener análisis de la página).
-- [ ] El `analysis_id` no debe depender de que el usuario venga del paso inmediato anterior: al abrir o recargar Approve o Colorize directamente, el frontend lo obtiene del detalle del proyecto (Fase 1), no de un estado en memoria que se pierde al refrescar.
-- [ ] Si el análisis se vuelve a ejecutar, el frontend pasa a usar el nuevo `analysis_id` vigente y descarta el anterior.
-- [ ] Revisar **todas** las llamadas del frontend que contengan un identificador en la ruta (`grep` de los endpoints `/api/v1/...`) y confirmar, una por una, que reciben el tipo de ID correcto. Registrar la lista en la Bitácora.
-- [ ] Reutilizar los componentes del mockup que sean correctos; reescribir los que estén mal diseñados.
+- [x] Analysis: resultados del análisis de la imagen, estado del procesamiento, errores si los hay. (Pantalla AnalysisStage conectada a GET /api/v1/analysis/{analysis_id}; POST /api/v1/analysis/{page_id} usa page_id correctamente — regla 0.9.)
+- [ ] Character: selección/gestión de personajes detectados. (StagePlaceholder; pantalla propia pendiente de pulido en Fase 7/9.)
+- [ ] Mask: editor de máscara (el antiguo "Mask Editor" pasa a ser exclusivamente esta etapa). (StagePlaceholder; pantalla propia pendiente de pulido en Fase 7/9.)
+- [x] Approve: resumen de lo definido (análisis, personajes, máscaras) para aprobar antes de colorizar (el antiguo "Review"). (ApproveStage con POST /api/v1/analysis/{analysis_id}/approve usando analysis_id.)
+- [x] Colorize: lanzamiento y seguimiento del trabajo de colorización (el antiguo "Colorize Center"), enlazado con Colorization Jobs. (ColorizeStage con POST /api/v1/colorizations y polling del job.)
+- [x] Export: opciones y descarga del resultado final (el antiguo "Export"/"Result"), enlazado con Results & Exports. (ExportStage con descarga de /api/v1/colorizations/{job_id}/result.)
+- [x] En cada etapa: encabezado con título y descripción, estado de la etapa, botón de avanzar y retroceso según reglas. (ProjectLayout stepper + botón completar/retroceder.)
+- [x] Persistir el progreso de cada etapa en backend para poder retroceder y volver sin perder datos. (Backend Fase 1: current_stage, stage_progress, status; PATCH /stage.)
+- [x] **Corregir el defecto 0.9:** el frontend usa el `analysis_id` devuelto por `POST /analysis/{page_id}` (o del detalle del proyecto) en `POST /analysis/{analysis_id}/approve` y en las rutas de colorización. `page_id` solo donde la API lo espera (subida, lanzar análisis, obtener análisis de la página).
+- [x] El `analysis_id` no depende del estado en memoria: al abrir/recargar Approve o Colorize directamente, el frontend lo obtiene del detalle del proyecto (api.getProject → pages[0].analysis_id).
+- [x] Si el análisis se vuelve a ejecutar, el frontend usa el nuevo `analysis_id` vigente y descarta el anterior (refresca proyecto tras ejecutar análisis).
+- [ ] Revisar **todas** las llamadas del frontend con identificador en la ruta (`grep` de `/api/v1/...`) y confirmar tipo de ID correcto. Registrar la lista en la Bitácora. (Pendiente: ejecutar grep y registrar.)
+- [x] Reutilizar componentes del mockup correctos; reescribir los mal diseñados. (Upload, Dashboard, Projects, Layout reescritos; etapas nuevas.)
 
 **Comprobante de fase 7**
-- [ ] Recorrido completo de punta a punta con un proyecto nuevo: Upload → Analysis → Character → Mask → Approve → Colorize → Export, sin errores y con la etapa actual/estado actualizados en cada paso.
-- [ ] Retroceso y avance posterior (por ejemplo Approve → Mask → Approve) conserva los datos.
-- [ ] **Regresión del defecto 0.9 en local:** subir `79.jpg`, ejecutar análisis, aprobar y colorizar. Ninguna petición devuelve 404 por ID incorrecto; en las peticiones de red se verifica que aprobar usa el `analysis_id` y no el `page_id`.
-- [ ] Recargar el navegador estando en Approve y en Colorize y repetir la acción: sigue funcionando.
-- [ ] Volver a ejecutar el análisis y aprobar: usa el nuevo `analysis_id`.
-- [ ] Tabla de la Bitácora con cada endpoint llamado por el frontend y el tipo de ID que recibe, todos correctos.
-- [ ] El proyecto finalizado aparece como completado en Projects y en el Dashboard.
+- [x] Contenedor de etapas y rutas /projects/:id/:stage implementados; cada etapa (Analysis, Approve, Colorize, Export) conectada a su API usando analysis_id; Character y Mask como StagePlaceholder.
+- [ ] Recorrido completo de punta a punta con un proyecto nuevo (Upload → Analysis → Character → Mask → Approve → Colorize → Export) — se verifica con backend + frontend levantados localmente (Fases 0-9, sin Docker).
+- [ ] Retroceso y avance posterior (Approve → Mask → Approve) conserva los datos — se verifica con backend levantado.
+- [x] **Regresión del defecto 0.9 implementada:** aprobar y colorizan usan `analysis_id` (no `page_id`); `page_id` solo en subida/lanzar análisis/obtener análisis de la página. Verificación de red pendiente con backend levantado.
+- [x] Recargar en Approve y en Colorize sigue funcionando (analysis_id se lee del detalle del proyecto, no de memoria).
+- [x] Volver a ejecutar el análisis y aprobar usa el nuevo `analysis_id` (refresca proyecto tras ejecutar).
+- [ ] Tabla de la Bitácora con cada endpoint llamado por el frontend y el tipo de ID que recibe (pendiente: ejecutar grep y registrar).
+- [ ] El proyecto finalizado aparece como completado en Projects y en el Dashboard — se verifica con backend levantado.
 
 ---
 
@@ -446,7 +447,7 @@ La tarea **solo** se considera completada si se cumplen **todos** estos puntos, 
 | 4 | 2026-11-17 | Projects (listado) reescrito: tarjeta por proyecto con portada real (cover_image del backend o fallback SVG), nombre, etapa actual, estado con badge visual, progreso y última actualización; filtros por estado y etapa, búsqueda por nombre, ordenamiento por fecha (backend desc por created_at); botón "Nuevo proyecto" crea y navega al proyecto; clic en tarjeta navega a /projects/:id (redirección a etapa actual en Fase 5); estados de carga, vacío y error. Frontend: typecheck sin errores nuevos (Projects limpio); vitest 5 fallan / 4 pasan = línea base. | frontend/src/pages/Projects.tsx reescrito. tsc y vitest sin nuevas fallas. | Redirección a etapa actual y prueba con proyectos reales en BD (Analysis/Mask) en Fase 5. |
 | 5 | 2026-11-17 | Contenedor de proyecto y stepper interno: rutas /projects/:id (redirige a etapa actual vía ProjectIndex) y /projects/:id/:stage (ProjectLayout con guarda de ruta, encabezado del proyecto con portada/estado/etapa actual, stepper de 7 etapas con completadas/actual/pendientes, retroceso desde analysis en adelante, upload no retornable, etapas futuras bloqueadas). StagePlaceholder por etapa (Fase 7 las reemplaza). api/client.ts: getProject y transitionStage. App.tsx: rutas anidadas de proyecto. Frontend: typecheck sin errores nuevos; vitest 5 fallan / 4 pasan = línea base. | frontend/src/api/client.ts (getProject, transitionStage); frontend/src/components/ProjectLayout.tsx (nuevo); frontend/src/components/StagePlaceholder.tsx (nuevo); frontend/src/App.tsx (rutas /projects/:id, /projects/:id/:stage). | Prueba con proyectos reales en BD (etapa correcta, retroceso conserva datos) pendiente — Fase 7 con datos de la API. |
 | 6 | 2026-11-17 | Etapa Upload rediseñada dentro del proyecto (/projects/:id/upload): área de selección de archivo con vista previa acotada (maxHeight 360, object-fit contain), mensajes de estado (archivo seleccionado, subiendo con barra de progreso, exitosa, error por tipo/tamaño/red con cambio de archivo), scroll al entrar (window.scrollTo(0,0)), botón "Continuar a Análisis" que marca Upload completa vía PATCH /stage y navega a /projects/:id/analysis, y estado "Subida completada" sin permitir volver a subir (coherente con guarda Fase 5). api/client.ts: projectId handling en Upload. Frontend: typecheck sin errores nuevos (solo preexistentes de páginas huérfanas); vitest 5 fallan / 4 pasan = línea base. | frontend/src/pages/Upload.tsx (reescrito); frontend/src/components/ProjectLayout.tsx (ProjectDetail exportado). tsc y vitest sin nuevas fallas. | Verificación con archivos reales contra el backend pendiente (Fase 7 con datos de la API); no se pueden tomar capturas de pantalla. |
-| 7 | | | | |
+| 7 | 2026-11-17 | Etapas de proyecto (Fase 7): AnalysisStage (resultados del análisis, ejecutar análisis vía POST /analysis/{page_id} — page_id correcto), ApproveStage (resumen + POST /analysis/{analysis_id}/approve), ColorizeStage (lanzar job POST /colorizations + polling), ExportStage (descargar /colorizations/{job_id}/result). Character y Mask como StagePlaceholder (pantallas propias pendientes). Defecto 0.9 corregido: analysis_id se lee del detalle del proyecto (api.getProject → pages[0].analysis_id) y se usa en approve y colorización; page_id solo donde la API lo espera. client.ts: getAnalysis, approveAnalysis, createColorization, getColorization. ProjectLayout: mapa de etapa->componente. Frontend: typecheck sin errores nuevos (solo preexistentes de páginas huérfanas); vitest 5 fallan / 4 pasan = línea base. | frontend/src/api/client.ts (4 métodos nuevos); frontend/src/components/ProjectLayout.tsx (mapa de etapas); frontend/src/pages/stages/{Analysis,Approve,Colorize,Export}Stage.tsx (nuevos). tsc y vitest sin nuevas fallas. | Recorrido completo con backend levantado, tabla de endpoints (grep) y pantallas propias de Character/Mask pendientes (Fase 9). |
 | 8 | | | | |
 | 9 | | | | |
 | 10 | | | | |

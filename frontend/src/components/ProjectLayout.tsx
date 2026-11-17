@@ -8,6 +8,11 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { StagePlaceholder } from "./StagePlaceholder";
+import { Upload } from "../pages/Upload";
+import { AnalysisStage } from "../pages/stages/AnalysisStage";
+import { ApproveStage } from "../pages/stages/ApproveStage";
+import { ColorizeStage } from "../pages/stages/ColorizeStage";
+import { ExportStage } from "../pages/stages/ExportStage";
 
 export const STAGE_ORDER: string[] = [
   "upload",
@@ -184,6 +189,19 @@ export function ProjectLayout() {
     return isCompleted(s) && STAGE_ORDER.indexOf(s) < currentIdx;
   };
 
+  // Mapa de etapa -> componente. Character y Mask reutilizan StagePlaceholder
+  // hasta que la Fase 7 implemente sus pantallas propias.
+  const stageComponentMap: Record<string, React.ComponentType<any>> = {
+    upload: Upload as any,
+    analysis: AnalysisStage,
+    character: StagePlaceholder,
+    mask: StagePlaceholder,
+    approve: ApproveStage,
+    colorize: ColorizeStage,
+    export: ExportStage,
+  };
+  const StageComponent = stageComponentMap[stageParam ?? project.current_stage] ?? StagePlaceholder;
+
   return (
     <div className="project-layout" style={{ display: "flex", flexDirection: "column", gap: 16, padding: 24 }}>
       {/* Encabezado del proyecto */}
@@ -243,7 +261,7 @@ export function ProjectLayout() {
 
       {/* Contenido de la etapa */}
       <main style={{ flex: 1 }}>
-        <StagePlaceholder
+        <StageComponent
           stage={stageParam ?? project.current_stage}
           isCurrent={!(stageParam && stageParam !== project.current_stage)}
           onComplete={handleComplete}
