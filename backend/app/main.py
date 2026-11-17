@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes.analysis import router as analysis_router
 from app.api.routes.colorizations import router as colorizations_router
 from app.api.routes.metrics import router as metrics_router
+from app.api.routes.models import router as models_router
 from app.api.routes.pages import router as pages_router
 from app.api.routes.projects import router as projects_router
 from app.core.logging import get_logger
@@ -34,6 +35,7 @@ try:
     app.include_router(analysis_router)
     app.include_router(colorizations_router)
     app.include_router(metrics_router)
+    app.include_router(models_router)
     logger.info("Todos los routers de la API registrados correctamente")
 except Exception as exc:  # pragma: no cover - fail-fast guard
     logger.exception("Error al registrar routers de la API: %s", exc)
