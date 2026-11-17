@@ -27,6 +27,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
     networks:
       - manga-internal
     healthcheck:
@@ -44,6 +46,8 @@ services:
     image: redis:7-alpine
     container_name: manga-redis
     command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "6379:6379"
     networks:
       - manga-internal
     healthcheck:
@@ -72,6 +76,9 @@ services:
       API_HOST: ${API_HOST}
       API_PORT: ${API_PORT}
       SECRET_KEY: ${SECRET_KEY}
+      STORAGE_ROOT: /app/data
+      SUMI_COLORIZATION_CHECKPOINT: /app/artifacts/checkpoints/sumi_unet_cpu_v1/best.pt
+      SUMI_COLORIZATION_RESULTS_DIR: /app/artifacts/results
     ports:
       - "127.0.0.1:8000:8000"
     depends_on:
@@ -81,7 +88,17 @@ services:
         condition: service_healthy
     networks:
       - manga-internal
-    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    command: ["sh", "-c", "PYTHONPATH=/app/backend alembic -c alembic/alembic.ini upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]
+    volumes:
+      - ./ml:/app/ml
+      - ./artifacts/checkpoints:/app/artifacts/checkpoints
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
   # ------------------------------------------------------------------
   # Worker CPU: procesos independientes del mismo monolito.
@@ -100,12 +117,24 @@ services:
       CELERY_BROKER_URL: ${CELERY_BROKER_URL}
       CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
       CELERY_QUEUES: ${WORKER_CPU_QUEUES}
+      STORAGE_ROOT: /app/data
+      SUMI_COLORIZATION_CHECKPOINT: /app/artifacts/checkpoints/sumi_unet_cpu_v1/best.pt
+      SUMI_COLORIZATION_RESULTS_DIR: /app/artifacts/results
     depends_on:
       redis:
         condition: service_healthy
     networks:
       - manga-internal
     command: ["celery", "-A", "app.workers.celery_app", "worker", "-Q", "${WORKER_CPU_QUEUES}", "-n", "cpu@%h"]
+    volumes:
+      - ./data:/app/data
+      - ./artifacts/checkpoints:/app/artifacts/checkpoints
+    healthcheck:
+      test: ["CMD", "celery", "-A", "app.workers.celery_app", "inspect", "ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   # ------------------------------------------------------------------
   # Worker GPU: procesos independientes del mismo monolito.
@@ -119,6 +148,7 @@ services:
   #     ejecutarse en el host conectandose al broker Redis local.
   # ------------------------------------------------------------------
   worker-gpu:
+    profiles: ["gpu"]
     build:
       context: ..
       dockerfile: docker/Dockerfile.worker-gpu
@@ -163,10 +193,16 @@ services:
       - "127.0.0.1:5173:5173"
     depends_on:
       api:
-        condition: service_started
+        condition: service_healthy
     networks:
       - manga-internal
     command: ["sh", "-c", "npm ci && npm run dev -- --host 0.0.0.0 --port 5173"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5173"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
 volumes:
   postgres_data:
