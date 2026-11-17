@@ -36,7 +36,7 @@ TERMINAL_STATES: Final[tuple[str, ...]] = (
 
 #: Transiciones permitidas: estado_origen -> conjunto de estados destino.
 ALLOWED_TRANSITIONS: Final[dict[str, set[str]]] = {
-    "pending": {"preprocessing", "cancelled"},
+    "pending": {"preprocessing", "colorizing", "cancelled"},
     "preprocessing": {"colorizing", "failed", "cancelled"},
     "colorizing": {"refining", "completed", "failed", "cancelled"},
     "refining": {"completed", "failed"},

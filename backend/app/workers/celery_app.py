@@ -13,6 +13,9 @@ celery_app = Celery(
 )
 
 celery_app.conf.task_default_queue = "default"
+# En Windows el pool 'prefork' falla con PermissionError (billiard shared memory).
+# Usar 'solo' en desarrollo local; en Docker Linux se puede volver a 'prefork'.
+celery_app.conf.worker_pool = "solo"
 celery_app.conf.task_serializer = "json"
 celery_app.conf.result_serializer = "json"
 celery_app.conf.accept_content = ["json"]
@@ -28,9 +31,10 @@ celery_app.conf.task_max_retries = 3
 celery_app.conf.result_expires = 86400  # 24 h
 
 # Rutas de tareas a colas dedicadas (CPU vs GPU).
+# colorize_page corre en CPU (no hay GPU en este entorno).
 celery_app.conf.task_routes = {
     "app.workers.tasks.analyze_page": {"queue": "WORKER_CPU_QUEUES"},
-    "app.workers.tasks.colorize_page": {"queue": "WORKER_GPU_QUEUES"},
+    "app.workers.tasks.colorize_page": {"queue": "WORKER_CPU_QUEUES"},
 }
 
 # Colas por defecto de workers (sobrescritas por variables de entorno).

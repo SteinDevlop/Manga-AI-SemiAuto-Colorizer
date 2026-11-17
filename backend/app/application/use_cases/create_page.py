@@ -4,7 +4,6 @@ Creates a page after validating the referenced project exists and the
 page hash is not duplicated. Depends on repository ports, never on
 concrete ORM models.
 """
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -12,12 +11,15 @@ from typing import Protocol
 from uuid import UUID
 
 from app.core.exceptions import ConflictError, NotFoundError
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class ProjectRepository(Protocol):
     """Port for project persistence operations."""
 
-    async def exists_by_id(self, *, project_id: UUID) -> bool:  # pragma: no cover - protocol stub
+    async def exists(self, *, project_id: UUID) -> bool:  # pragma: no cover - protocol stub
         """Return True when a project with the given ID exists."""
         ...
 
@@ -94,39 +96,62 @@ class CreatePageUseCase:
             NotFoundError: when the referenced project does not exist.
             ConflictError: when the hash_sha256 is already in use.
         """
-        if not await self._project_repository.exists_by_id(project_id=input_data.project_id):
-            raise NotFoundError(
-                message="Referenced project not found.",
-                details={"field": "project_id", "reason": "not_found"},
+        try:
+            if not await self._project_repository.exists(project_id=input_data.project_id):
+                logger.warning(
+                    "Proyecto no encontrado para la página: %s", input_data.project_id
+                )
+                raise NotFoundError(
+                    message="Referenced project not found.",
+                    details={"field": "project_id", "reason": "not_found"},
+                )
+
+            if await self._page_repository.exists_by_hash(hash_sha256=input_data.hash_sha256):
+                logger.warning(
+                    "Hash de página duplicado: %s", input_data.hash_sha256
+                )
+                raise ConflictError(
+                    message="A page with this hash already exists.",
+                    details={"field": "hash_sha256", "reason": "duplicate_hash"},
+                )
+
+            entity = await self._page_repository.create(
+                project_id=input_data.project_id,
+                nombre_archivo_original=input_data.nombre_archivo_original,
+                hash_sha256=input_data.hash_sha256,
+                ruta_archivo=input_data.ruta_archivo,
+                mime_type=input_data.mime_type,
+                ancho=input_data.ancho,
+                alto=input_data.alto,
+                tamano_bytes=input_data.tamano_bytes,
             )
 
-        if await self._page_repository.exists_by_hash(hash_sha256=input_data.hash_sha256):
-            raise ConflictError(
-                message="A page with this hash already exists.",
-                details={"field": "hash_sha256", "reason": "duplicate_hash"},
+            logger.info(
+                "Página creada exitosamente: %s (proyecto: %s)",
+                entity.id,
+                input_data.project_id,
             )
-
-        entity = await self._page_repository.create(
-            project_id=input_data.project_id,
-            nombre_archivo_original=input_data.nombre_archivo_original,
-            hash_sha256=input_data.hash_sha256,
-            ruta_archivo=input_data.ruta_archivo,
-            mime_type=input_data.mime_type,
-            ancho=input_data.ancho,
-            alto=input_data.alto,
-            tamano_bytes=input_data.tamano_bytes,
-        )
-
-        return PageOutput(
-            id=str(entity.id),
-            project_id=str(entity.project_id),
-            nombre_archivo_original=entity.nombre_archivo_original,
-            hash_sha256=entity.hash_sha256,
-            ruta_archivo=entity.ruta_archivo,
-            mime_type=entity.mime_type,
-            ancho=entity.ancho,
-            alto=entity.alto,
-            tamano_bytes=entity.tamano_bytes,
-            estado=entity.estado,
-            created_at=entity.created_at.isoformat(),
-        )
+            return PageOutput(
+                id=str(entity.id),
+                project_id=str(entity.project_id),
+                nombre_archivo_original=entity.nombre_archivo_original,
+                hash_sha256=entity.hash_sha256,
+                ruta_archivo=entity.ruta_archivo,
+                mime_type=entity.mime_type,
+                ancho=entity.ancho,
+                alto=entity.alto,
+                tamano_bytes=entity.tamano_bytes,
+                estado=entity.estado,
+                created_at=entity.created_at.isoformat(),
+            )
+        except ConflictError:
+            raise
+        except NotFoundError:
+            raise
+        except Exception as exc:  # pragma: no cover - infra failure path
+            logger.exception(
+                "Error al crear página para proyecto %s: %s",
+                input_data.project_id,
+                exc,
+            )
+            raise

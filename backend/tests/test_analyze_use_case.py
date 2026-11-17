@@ -35,6 +35,9 @@ class StubPageRepository:
     async def get_by_id(self, *, page_id: uuid.UUID):
         return self._page
 
+    async def get(self, *, page_id: uuid.UUID):
+        return self._page
+
 
 class StubDetector:
     """Stub implementing the runtime_checkable Protocol signatures."""

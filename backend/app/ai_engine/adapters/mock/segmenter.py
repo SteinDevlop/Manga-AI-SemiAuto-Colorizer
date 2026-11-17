@@ -1,12 +1,14 @@
 """Mock segmenter adapter.
 
 Implements the ``Segmenter`` protocol with fictional mask artifacts.
-No heavy inference is executed in this phase (the real model lands in P8).
+No heavy inference is executed here; the real model lands in P8.
 """
 
 from __future__ import annotations
 
 import hashlib
+import tempfile
+from pathlib import Path
 from typing import TypedDict
 
 
@@ -54,10 +56,16 @@ class MockSegmenter:
         for index, region in enumerate(regions, start=1):
             region_id = str(region.get("region_id", f"region-{index}"))
             digest = hashlib.sha256(f"{image_path}:{region_id}".encode("utf-8")).hexdigest()
+
+            # Create a temporary empty PNG file so the storage service can read it.
+            tmp = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
+            tmp.close()
+            Path(tmp.name).touch()
+
             masks.append(
                 MaskArtifact(
                     region_id=region_id,
-                    ruta_archivo=f"mock/masks/{region_id}.png",
+                    ruta_archivo=tmp.name,
                     hash_sha256=digest,
                     ancho=self.DEFAULT_WIDTH,
                     alto=self.DEFAULT_HEIGHT,

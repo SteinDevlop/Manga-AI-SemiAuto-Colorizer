@@ -4,7 +4,6 @@ Marks a page analysis as APPROVED after the user has reviewed identities,
 attributes and palettes. Human-in-the-loop: no colorization job can be
 created without a valid approval (ADR-005).
 """
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -12,6 +11,9 @@ from typing import Any, Protocol
 from uuid import UUID
 
 from app.core.exceptions import NotFoundError
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class AnalysisRepository(Protocol):
@@ -61,24 +63,38 @@ class ApproveAnalysisUseCase:
         Raises:
             NotFoundError: when no analysis matches the given ID.
         """
-        analysis = await self._analysis_repository.get(analysis_id=input_data.analysis_id)
-        if analysis is None:
-            raise NotFoundError(
-                message="Analysis not found.",
-                details={"field": "analysis_id", "reason": "not_found"},
-            )
+        try:
+            analysis = await self._analysis_repository.get(analysis_id=input_data.analysis_id)
+            if analysis is None:
+                logger.warning("Análisis no encontrado para aprobación: %s", input_data.analysis_id)
+                raise NotFoundError(
+                    message="Analysis not found.",
+                    details={"field": "analysis_id", "reason": "not_found"},
+                )
 
-        updated = await self._analysis_repository.update(
-            analysis_id=input_data.analysis_id,
-            estado="APPROVED",
-        )
-        if updated is None:
-            raise NotFoundError(
-                message="Analysis not found.",
-                details={"field": "analysis_id", "reason": "not_found"},
+            updated = await self._analysis_repository.update(
+                analysis_id=input_data.analysis_id,
+                estado="APPROVED",
             )
+            if updated is None:
+                raise NotFoundError(
+                    message="Analysis not found.",
+                    details={"field": "analysis_id", "reason": "not_found"},
+                )
 
-        return ApproveAnalysisOutput(
-            analysis_id=str(updated.analysis_id),
-            estado=str(updated.estado),
-        )
+            logger.info(
+                "Análisis aprobado: %s (estado: APPROVED)", input_data.analysis_id
+            )
+            return ApproveAnalysisOutput(
+                analysis_id=str(updated.id),
+                estado=str(updated.estado),
+            )
+        except NotFoundError:
+            raise
+        except Exception as exc:  # pragma: no cover - infra failure path
+            logger.exception(
+                "Error al aprobar análisis %s: %s",
+                input_data.analysis_id,
+                exc,
+            )
+            raise

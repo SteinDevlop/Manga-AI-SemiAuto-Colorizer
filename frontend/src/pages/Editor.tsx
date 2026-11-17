@@ -1,79 +1,175 @@
-/* SUMI Character & Color Editor — from studio.html mockup. */
-
-const attributes = [
-  { name: "Skin", value: "#FAE2D6", confidence: 96, status: "ok" },
-  { name: "Hair", value: "#1B1C24", confidence: 94, status: "ok" },
-  { name: "Eyes", value: "#315BEA", confidence: 71, status: "uncertain" },
-  { name: "Clothing", value: "#1E2D4D", confidence: 100, status: "override" },
-  { name: "Accessories", value: "#F04438", confidence: 92, status: "ok" },
-];
+/* SUMI Character & Color Editor — edita atributos y paletas de un análisis. */
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { api, API_BASE } from "../api/client";
+import type { Character, CharacterAttribute, CharacterAppearance } from "../types";
 
 export default function Editor() {
+  const { analysisId } = useParams<{ analysisId: string }>();
+  const navigate = useNavigate();
+  const [analysis, setAnalysis] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!analysisId) return;
+    setLoading(true);
+    api.get<any>(`/analysis/${analysisId}`)
+      .then((data) => {
+        setAnalysis(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err.message || "Failed to load analysis.");
+        setLoading(false);
+      });
+  }, [analysisId]);
+
+  const handleSave = async (characterId: string, attributeName: string, value: string) => {
+    setSaving(true);
+    try {
+      await api.patch<any>(`/characters/${characterId}/attributes/${attributeName}`, { valor_aprobado: value });
+    } catch (err) {
+      console.warn("Attribute update endpoint not available yet:", err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <section className="screen is-active" id="screen-characters">
+        <div className="page-head">
+          <div>
+            <span className="eyebrow">04 // Character & Color</span>
+            <h1 className="h1">Loading editor…</h1>
+          </div>
+        </div>
+        <p style={{ color: "var(--ink-muted)" }}>Loading character data…</p>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="screen is-active" id="screen-characters">
+        <div className="page-head">
+          <div>
+            <span className="eyebrow">04 // Character & Color</span>
+            <h1 className="h1">Editor</h1>
+          </div>
+        </div>
+        <p style={{ color: "#c0392b" }}>{error}</p>
+        <button type="button" className="btn btn-vermilion" onClick={() => navigate("/projects")}>
+          Back to Projects
+        </button>
+      </section>
+    );
+  }
+
+  if (!analysis) {
+    return (
+      <section className="screen is-active" id="screen-characters">
+        <div className="page-head">
+          <div>
+            <span className="eyebrow">04 // Character & Color</span>
+            <h1 className="h1">Editor</h1>
+          </div>
+        </div>
+        <p>No analysis data available.</p>
+        <button type="button" className="btn btn-vermilion" onClick={() => navigate("/projects")}>
+          Back to Projects
+        </button>
+      </section>
+    );
+  }
+
+  const characters = analysis.characters || [];
+  const appearances = analysis.appearances || [];
+
   return (
     <section className="screen is-active" id="screen-characters">
       <div className="page-head">
         <div>
-          <span className="eyebrow">04 // Character & Palette Configuration</span>
-          <h1 className="h1">Renji (ID-01) — <em>Color</em> Memory</h1>
+          <span className="eyebrow">04 // Character & Color</span>
+          <h1 className="h1">Character Editor — Analysis {analysisId.slice(0, 8)}…</h1>
         </div>
-        <button type="button" className="btn btn-primary btn-sm" onClick={() => {}}>
-          Next: Mask Editor →
+        <button type="button" className="btn btn-outline btn-sm" onClick={() => navigate("/projects")}>
+          ← Back to Projects
         </button>
       </div>
 
-      <div className="grid-2" style={{ gridTemplateColumns: "300px 1fr" }}>
-        <div className="panel-box">
-          <span className="eyebrow">Character Reference</span>
-          <div
-            style={{
-              aspectRatio: 1 / 1,
-              border: "1px solid var(--ink)",
-              background: "var(--paper-2)",
-              margin: "12px 0",
-              display: "grid",
-              placeItems: "center",
-            }}
-          >
-            <svg viewBox="0 0 160 160" width="120" height="120">
-              <circle cx="80" cy="64" r="34" fill="#fae2d6" stroke="#111" strokeWidth="2" />
-              <path d="M46 64 Q50 26 84 28 Q116 30 112 68 Q94 48 64 52 Z" fill="#111" />
-              <path d="M36 160 L50 104 L110 104 L124 160 Z" fill="#1e2d4d" stroke="#111" strokeWidth="2" />
-            </svg>
-          </div>
-          <div style={{ fontSize: 0.82, color: "var(--ink-muted)" }}>
-            Appears on <strong>6 pages</strong> · Scene-specific wardrobe overrides enabled.
-          </div>
+      {characters.length === 0 ? (
+        <div className="panel-box" style={{ textAlign: "center", padding: "64px 24px" }}>
+          <span className="eyebrow">No Characters</span>
+          <h2 className="h1">No characters detected in this analysis.</h2>
+          <p style={{ color: "var(--ink-muted)", maxWidth: 440, margin: "0 auto 24px" }}>
+            Run analysis on a page first to detect characters and their attributes.
+          </p>
         </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {characters.map((character: Character) => {
+            const charAppearances = appearances.filter((a: CharacterAppearance) => a.character_id === character.id);
+            return (
+              <div key={character.id} className="panel-box" style={{ marginBottom: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                  <div>
+                    <strong>{character.nombre}</strong>
+                    <span className="mono-label">{character.id.slice(0, 8)}…</span>
+                  </div>
+                  <span className={`badge ${character.confianza_identidad && character.confianza_identidad > 0.8 ? "badge-done" : "badge-review"}`}>
+                    {(character.confianza_identidad ?? 0).toFixed(2)} confidence
+                  </span>
+                </div>
 
-        <div className="panel-box">
-          <div className="pane-title">
-            <span>Attributes (PATCH /api/v1/characters/id-01/attributes)</span>
-          </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 12 }}>
+                  {character.attributes?.map((attr: CharacterAttribute) => (
+                    <div key={attr.id} style={{ border: "1px solid var(--border)", borderRadius: 6, padding: 12, background: "#1e293b" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                        <strong>{attr.nombre_atributo}</strong>
+                        <span className={`badge ${attr.esta_aprobado ? "badge-done" : "badge-review"}`}>
+                          {attr.esta_aprobado ? "Approved" : "Pending"}
+                        </span>
+                      </div>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <input
+                          type="text"
+                          value={attr.valor_aprobado ?? attr.valor_sugerido ?? ""}
+                          onChange={(e) => handleSave(character.id, attr.nombre_atributo, e.target.value)}
+                          placeholder={attr.valor_sugerido ?? "n/a"}
+                          disabled={attr.esta_aprobado}
+                          style={{ flex: 1, padding: "6px 10px", border: "1px solid var(--border)", borderRadius: 4, background: "#0f172a", color: "#fff" }}
+                        />
+                        <span className="mono-label">{attr.valor_sugerido ?? "n/a"}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {!character.attributes || character.attributes.length === 0 && (
+                    <div style={{ gridColumn: "1 / -1", textAlign: "center", color: "var(--ink-muted)", fontSize: 0.85 }}>
+                      No attributes detected for this character.
+                    </div>
+                  )}
+                </div>
 
-          {attributes.map((attr) => (
-            <div key={attr.name} className="attr-row">
-              <strong>{attr.name}</strong>
-              <input
-                type="color"
-                className="swatch-input"
-                value={attr.value}
-                data-attr={attr.name.toLowerCase()}
-              />
-              <span className={`mono-label ${attr.status === "uncertain" ? "color-uncertain" : ""}`}>
-                {attr.status === "uncertain"
-                  ? `${attr.confidence}% Uncertain`
-                  : attr.status === "override"
-                    ? "Scene Override"
-                    : `${attr.confidence}% Confidence`}
-              </span>
-              <input type="text" className="hex-input" value={attr.value} data-hex={attr.name.toLowerCase()} />
-              <button type="button" className="btn btn-outline btn-sm" data-restore={attr.name.toLowerCase()} data-default={attr.value}>
-                Restore
-              </button>
-            </div>
-          ))}
+                {charAppearances.length > 0 && (
+                  <div style={{ marginTop: 12, borderTop: "1px solid var(--border)", paddingTop: 12 }}>
+                    <span className="eyebrow">Appearances ({charAppearances.length})</span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6 }}>
+                      {charAppearances.map((appearance: CharacterAppearance) => (
+                        <div key={appearance.id} style={{ padding: 8, background: "#0f172a", borderRadius: 4, fontSize: 0.85, color: "var(--ink-muted)" }}>
+                          Appearance {appearance.id.slice(0, 8)}…{appearance.panel_id ? ` · Panel ${appearance.panel_id.slice(0, 8)}…` : ""}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
-      </div>
+      )}
     </section>
   );
 }

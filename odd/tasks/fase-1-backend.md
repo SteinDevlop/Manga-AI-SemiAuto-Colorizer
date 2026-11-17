@@ -32,15 +32,15 @@ S23 — Documentar los contratos (OpenAPI o archivo equivalente). Citado del pla
 
 | ID | Specs | Route | Status | Commit |
 |----|-------|-------|--------|--------|
-| T1 | S1, S22 | inline | pending | |
-| T2 | S2 | inline | pending | |
-| T3 | S3, S4 | inline | pending | |
-| T4 | S5, S6, S7 | inline | pending | |
-| T5 | S8 | inline | pending | |
-| T6 | S9 | inline | pending | |
-| T7 | S10 | inline | pending | |
-| T8 | S11 | inline | pending | |
-| T9 | S12, S13, S14, S15, S16, S17, S18, S19, S20, S21 | delegated (adaptadores + Model Registry HTTP son superficies nuevas disjuntas) | pending | |
+| T1 | S1, S22 | inline | done | fbd9fb5 |
+| T2 | S2 | inline | done | fbd9fb5 |
+| T3 | S3, S4 | inline | done | fbd9fb5 |
+| T4 | S5, S6, S7 | inline | done | fbd9fb5 |
+| T5 | S8 | inline | done | fbd9fb5 |
+| T6 | S9 | inline | done | fbd9fb5 |
+| T7 | S10 | inline | done | fbd9fb5 |
+| T8 | S11 | inline | done | fbd9fb5 |
+| T9 | S12, S13, S14, S15, S16, S17, S18, S19, S20, S21 | delegated (adaptadores + Model Registry HTTP son superficies nuevas disjuntas) | in_progress | |
 | T10 | S23 | inline | pending | |
 
 ## Log

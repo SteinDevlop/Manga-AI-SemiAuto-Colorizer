@@ -1,5 +1,6 @@
 """Alembic environment configuration."""
 
+import os
 from logging.config import fileConfig
 
 from alembic import context
@@ -13,6 +14,13 @@ config = context.config
 # This line sets up loggers basically.
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
+# Override database URL from environment variable if present (Docker support).
+# Alembic uses psycopg2 (synchronous); the app uses asyncpg. Convert if needed.
+database_url = os.environ.get("DATABASE_URL")
+if database_url:
+    sync_url = database_url.replace("postgresql+asyncpg://", "postgresql+psycopg2://")
+    config.set_main_option("sqlalchemy.url", sync_url)
 
 # add your model's MetaData object here
 # for 'autogenerate' support

@@ -10,12 +10,11 @@ Two orchestration tasks are defined:
   returns result path and model version.
 
 Both tasks accept only serializable identifiers (strings) and optional
-parameter dicts — never ORM objects or binary payloads. They are idempotent:
+parameter dicts -- never ORM objects or binary payloads. They are idempotent:
 when a job is already in a terminal state the task returns without
 regenerating artifacts. Heavy inference is intentionally not executed here
 (a real GPU adapter is pending for P8).
 """
-
 from __future__ import annotations
 
 import asyncio
@@ -23,12 +22,27 @@ import time
 from datetime import datetime, timezone
 from typing import Any
 
+from app.ai_engine.adapters.real.colorization_engine import (
+    ModelUnavailableError,
+    RealColorizationEngine,
+)
 from app.core.exceptions import AppError, ConflictError, InternalError, NotFoundError
+from app.core.logging import get_logger
 from app.infrastructure.database.session import async_session_factory as async_session
+from app.infrastructure.storage.service import StorageService
+from app.modules.assets.models import Artifact
+from app.modules.assets.repositories import ArtifactRepository
+from app.modules.character_analysis.models import CharacterAppearance
+from app.modules.colorization.models import MaskArtifact
 from app.modules.colorization.repositories import ColorizationJobRepository
 from app.modules.colorization.states import is_terminal, is_valid_transition
+from app.modules.page_analysis.models import Analysis
+from app.modules.projects.models import Page
 from app.workers.celery_app import celery_app
 from celery import Task
+from sqlalchemy import select
+
+logger = get_logger(__name__)
 
 #: Simulated per-stage durations (seconds) for analyze_page.
 ANALYZE_STAGES: list[tuple[str, int, str]] = [
@@ -46,6 +60,21 @@ COLORIZE_STAGES: list[tuple[str, int, str]] = [
     ("refining", 20, "Refining color output"),
     ("finalizing", 10, "Finalizing result"),
 ]
+
+
+def _run_async(coro) -> Any:
+    """Ejecutar una corrutina de forma segura dentro de un worker de Celery.
+
+    Celery ya puede tener un event loop activo, por lo que ``_run_async()``
+    fallaría con "Future attached to a different loop". Esta helper obtiene
+    el loop existente o crea uno nuevo y ejecuta la corrutina hasta completarla.
+    """
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    return loop.run_until_complete(coro)
 
 
 def _now_iso() -> str:
@@ -140,6 +169,32 @@ def _simulate_stage(duration_seconds: int) -> None:
     time.sleep(duration_seconds)
 
 
+async def _resolve_image_path(analysis_id: str) -> str:
+    """Resolve the original page image path from the linked analysis."""
+    async with async_session() as session:
+        analysis_result = await session.execute(
+            select(Analysis).where(Analysis.id == analysis_id)
+        )
+        analysis_row = analysis_result.scalar_one_or_none()
+        if analysis_row is None:
+            raise NotFoundError(
+                message=f"Analysis {analysis_id} not found",
+                details={"analysis_id": analysis_id},
+            )
+        page_id = analysis_row.page_id
+
+        page_result = await session.execute(
+            select(Page).where(Page.id == page_id)
+        )
+        page_row = page_result.scalar_one_or_none()
+        if page_row is None:
+            raise NotFoundError(
+                message=f"Page {page_id} not found",
+                details={"page_id": str(page_id)},
+            )
+        return page_row.ruta_archivo
+
+
 class ColorizationTask(Task):
     """Base task class with idempotency guards shared by analyze/colorize."""
 
@@ -185,7 +240,7 @@ def analyze_page(self: Task, page_id: str, analysis_id: str) -> dict[str, Any]:
 
     # Idempotency: check current job state before doing any work.
     try:
-        job = asyncio.run(_fetch_job(job_id))
+        job = _run_async(_fetch_job(job_id))
     except Exception as exc:  # pragma: no cover - infra failure path
         raise InternalError(
             message="Failed to read job state",
@@ -216,7 +271,7 @@ def analyze_page(self: Task, page_id: str, analysis_id: str) -> dict[str, Any]:
 
     # Mark the job as actively preprocessing.
     try:
-        asyncio.run(
+        _run_async(
             _update_job(
                 job_id,
                 estado="preprocessing",
@@ -257,7 +312,7 @@ def analyze_page(self: Task, page_id: str, analysis_id: str) -> dict[str, Any]:
 
             # Persist progress after each stage so workers can recover.
             try:
-                asyncio.run(
+                _run_async(
                     _update_job(
                         job_id,
                         estado="preprocessing",
@@ -273,7 +328,7 @@ def analyze_page(self: Task, page_id: str, analysis_id: str) -> dict[str, Any]:
 
         # Transition to completed.
         try:
-            asyncio.run(
+            _run_async(
                 _update_job(
                     job_id,
                     estado="completed",
@@ -306,7 +361,7 @@ def analyze_page(self: Task, page_id: str, analysis_id: str) -> dict[str, Any]:
         raise
     except Exception as exc:  # pragma: no cover - unexpected failure path
         try:
-            asyncio.run(
+            _run_async(
                 _update_job(
                     job_id,
                     estado="failed",
@@ -325,7 +380,7 @@ def analyze_page(self: Task, page_id: str, analysis_id: str) -> dict[str, Any]:
     bind=True,
     name="app.workers.tasks.colorize_page",
     base=ColorizationTask,
-    queue="WORKER_GPU_QUEUES",
+    queue="WORKER_CPU_QUEUES",
     acks_late=True,
     reject_on_worker_lost=True,
 )
@@ -355,7 +410,7 @@ def colorize_page(
 
     # Idempotency: check current job state before doing any work.
     try:
-        job = asyncio.run(_fetch_job(job_id))
+        job = _run_async(_fetch_job(job_id))
     except Exception as exc:  # pragma: no cover - infra failure path
         raise InternalError(
             message="Failed to read job state",
@@ -386,7 +441,7 @@ def colorize_page(
 
     # Mark the job as actively colorizing.
     try:
-        asyncio.run(
+        _run_async(
             _update_job(
                 job_id,
                 estado="colorizing",
@@ -404,96 +459,43 @@ def colorize_page(
             details={"job_id": job_id, "error": str(exc)},
         ) from exc
 
-    # Simulated GPU metrics recorded per execution (S8-aligned).
-    simulated_vram_mb = 2048
-    simulated_duration_s = 0
-    stage_results: list[dict[str, Any]] = []
-    progress = 0
-    total_stages = len(COLORIZE_STAGES)
-
+    # Resolve the original page image path from the linked analysis.
     try:
-        for index, (stage, duration, message) in enumerate(COLORIZE_STAGES, start=1):
-            _simulate_stage(duration)
-            simulated_duration_s += duration
-            progress = int(round(index / total_stages * 100))
-            _record_progress(
-                self,
-                job_id=job_id,
-                stage=stage,
-                progress=progress,
-                message=message,
-            )
-            stage_results.append(
-                {
-                    "stage": stage,
-                    "progress": progress,
-                    "message": message,
-                    "timestamp": _now_iso(),
-                    "vram_mb": simulated_vram_mb,
-                }
-            )
+        image_path = _run_async(_resolve_image_path(analysis_id))
+    except NotFoundError:
+        raise
+    except Exception as exc:  # pragma: no cover - infra failure path
+        raise InternalError(
+            message="Failed to resolve input image path",
+            details={"job_id": job_id, "error": str(exc)},
+        ) from exc
 
-            # Persist progress after each stage for recovery.
-            try:
-                asyncio.run(
-                    _update_job(
-                        job_id,
-                        estado="colorizing",
-                        progreso=progress,
-                        mensaje=message,
-                    )
-                )
-            except Exception as exc:  # pragma: no cover - infra failure path
-                raise InternalError(
-                    message="Failed to persist progress",
-                    details={"job_id": job_id, "stage": stage, "error": str(exc)},
-                ) from exc
-
-        result_path = f"/data/results/{job_id}.png"
-        model_version = "manga-colorizer-v1"
-
-        # Transition to completed with result metadata.
+    # Run real inference with the local U-Net (CPU).
+    engine = RealColorizationEngine()
+    try:
+        engine_result = engine.colorize(
+            image_path=image_path,
+            mask_references=[],
+            palette=palette or {},
+        )
+    except ModelUnavailableError as exc:
         try:
-            asyncio.run(
+            _run_async(
                 _update_job(
                     job_id,
-                    estado="completed",
-                    progreso=100,
-                    mensaje="Colorization completed",
-                    ruta_resultado=result_path,
-                    version_modelo=model_version,
+                    estado="failed",
+                    mensaje=f"Model unavailable: {exc.reason}",
                 )
             )
-        except Exception as exc:  # pragma: no cover - infra failure path
-            raise InternalError(
-                message="Failed to mark job completed",
-                details={"job_id": job_id, "error": str(exc)},
-            ) from exc
-
-        result: dict[str, Any] = {
-            "job_id": job_id,
-            "status": "completed",
-            "state": "completed",
-            "progress": 100,
-            "analysis_id": analysis_id,
-            "ruta_resultado": result_path,
-            "version_modelo": model_version,
-            "vram_mb": simulated_vram_mb,
-            "duration_s": simulated_duration_s,
-            "palette": palette or {},
-            "stages": stage_results,
-            "task_id": task_id,
-            "finished_at": _now_iso(),
-        }
-        return result
-
-    except ConflictError:
-        raise
-    except AppError:
-        raise
-    except Exception as exc:  # pragma: no cover - unexpected failure path
+        except Exception:  # pragma: no cover - best-effort failure record
+            pass
+        raise InternalError(
+            message="Colorization model unavailable",
+            details={"job_id": job_id, "error": str(exc)},
+        ) from exc
+    except Exception as exc:  # pragma: no cover - inference failure path
         try:
-            asyncio.run(
+            _run_async(
                 _update_job(
                     job_id,
                     estado="failed",
@@ -506,3 +508,65 @@ def colorize_page(
             message="Colorization failed",
             details={"job_id": job_id, "error": str(exc)},
         ) from exc
+
+    # Persist result artifact via storage service and mark job completed.
+    storage = StorageService()
+    try:
+        saved = storage.save(
+            source_path=engine_result["ruta_resultado"],
+            artifact_type="results",
+            original_name=f"colorized_{job_id}.png",
+        )
+    except Exception as exc:  # pragma: no cover - storage failure path
+        try:
+            _run_async(
+                _update_job(
+                    job_id,
+                    estado="failed",
+                    mensaje=f"Failed to store result: {exc}",
+                )
+            )
+        except Exception:  # pragma: no cover - best-effort failure record
+            pass
+        raise InternalError(
+            message="Failed to store colorization result",
+            details={"job_id": job_id, "error": str(exc)},
+        ) from exc
+
+    try:
+        _run_async(
+            _update_job(
+                job_id,
+                estado="completed",
+                progreso=100,
+                mensaje="Colorization completed",
+                ruta_resultado=saved["ruta_archivo"],
+                version_modelo=engine_result["version_modelo"],
+                parametros={
+                    **engine_result["parametros"],
+                    "storage_artifact_id": saved["artifact_id"],
+                    "storage_hash": saved["hash_sha256"],
+                },
+            )
+        )
+    except Exception as exc:  # pragma: no cover - infra failure path
+        raise InternalError(
+            message="Failed to mark job completed",
+            details={"job_id": job_id, "error": str(exc)},
+        ) from exc
+
+    result: dict[str, Any] = {
+        "job_id": job_id,
+        "status": "completed",
+        "state": "completed",
+        "progress": 100,
+        "analysis_id": analysis_id,
+        "ruta_resultado": saved["ruta_archivo"],
+        "version_modelo": engine_result["version_modelo"],
+        "artifact_id": saved["artifact_id"],
+        "storage_hash": saved["hash_sha256"],
+        "palette": palette or {},
+        "task_id": task_id,
+        "finished_at": _now_iso(),
+    }
+    return result

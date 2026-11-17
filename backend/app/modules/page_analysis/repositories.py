@@ -73,6 +73,18 @@ class PageRepository:
         result = await self.session.execute(stmt)
         return result.first() is not None
 
+    async def exists_by_hash(self, hash_sha256: str) -> bool:
+        """Return ``True`` when a page with the given hash exists."""
+        stmt: Select = select(Page.id).where(Page.hash_sha256 == hash_sha256).limit(1)
+        result = await self.session.execute(stmt)
+        return result.first() is not None
+
+    async def get_by_hash(self, hash_sha256: str) -> Page | None:
+        """Return the page with the given hash, or ``None`` if missing."""
+        stmt: Select = select(Page).where(Page.hash_sha256 == hash_sha256).limit(1)
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+
 
 class PanelRepository:
     """Repository for ``Panel`` entities.

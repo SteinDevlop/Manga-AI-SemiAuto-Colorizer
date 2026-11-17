@@ -4,7 +4,6 @@ Returns an analysis with its panels, characters, appearances and masks,
 or raises NotFoundError when missing. Depends on repository ports,
 never on concrete ORM models.
 """
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -12,6 +11,9 @@ from typing import Protocol
 from uuid import UUID
 
 from app.core.exceptions import NotFoundError
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class AnalysisRepository(Protocol):
@@ -162,94 +164,110 @@ class GetAnalysisUseCase:
     async def execute(self, input_data: GetAnalysisInput) -> GetAnalysisOutput:
         """Execute the get analysis use case.
 
-        Raises:
-            NotFoundError: when no analysis matches the given analysis_id.
+        Raises NotFoundError when the analysis does not exist.
         """
-        analysis = await self._analysis_repository.get(analysis_id=input_data.analysis_id)
-        if analysis is None:
-            raise NotFoundError(
-                message="Analysis not found.",
-                details={"field": "analysis_id", "reason": "not_found"},
-            )
-
-        panels_output: list[PanelOutput] = []
-        panel_entities = await self._panel_repository.list(page_id=analysis.page_id)
-        for panel_entity in panel_entities:
-            panels_output.append(
-                PanelOutput(
-                    id=str(panel_entity.id),
-                    page_id=str(panel_entity.page_id),
-                    numero_orden=int(panel_entity.numero_orden),
-                    x=float(panel_entity.x),
-                    y=float(panel_entity.y),
-                    ancho=float(panel_entity.ancho),
-                    alto=float(panel_entity.alto),
-                    confianza_deteccion=panel_entity.confianza_deteccion,
+        try:
+            analysis = await self._analysis_repository.get(analysis_id=input_data.analysis_id)
+            if analysis is None:
+                logger.warning("Análisis no encontrado: %s", input_data.analysis_id)
+                raise NotFoundError(
+                    message="Analysis not found.",
+                    details={"field": "analysis_id", "reason": "not_found"},
                 )
-            )
 
-        appearances_output: list[CharacterAppearanceOutput] = []
-        appearance_entities = await self._character_appearance_repository.list(
-            page_id=analysis.page_id
-        )
-        characters_by_id: dict[UUID, CharacterOutput] = {}
-        masks_by_appearance: dict[UUID, list[MaskArtifactOutput]] = {}
-
-        for appearance_entity in appearance_entities:
-            appearances_output.append(
-                CharacterAppearanceOutput(
-                    id=str(appearance_entity.id),
-                    page_id=str(appearance_entity.page_id),
-                    character_id=str(appearance_entity.character_id),
-                    panel_id=(
-                        str(appearance_entity.panel_id)
-                        if appearance_entity.panel_id is not None
-                        else None
-                    ),
-                    confianza_deteccion=appearance_entity.confianza_deteccion,
-                )
-            )
-
-            character_id = appearance_entity.character_id
-            if character_id not in characters_by_id:
-                character_entity = await self._character_repository.get(character_id=character_id)
-                if character_entity is not None:
-                    characters_by_id[character_id] = CharacterOutput(
-                        id=str(character_entity.id),
-                        nombre=str(character_entity.nombre),
-                        descripcion=character_entity.descripcion,
-                        confianza_identidad=character_entity.confianza_identidad,
+            panels_output: list[PanelOutput] = []
+            panel_entities = await self._panel_repository.list(page_id=analysis.page_id)
+            for panel_entity in panel_entities:
+                panels_output.append(
+                    PanelOutput(
+                        id=str(panel_entity.id),
+                        page_id=str(panel_entity.page_id),
+                        numero_orden=int(panel_entity.numero_orden),
+                        x=float(panel_entity.x),
+                        y=float(panel_entity.y),
+                        ancho=float(panel_entity.ancho),
+                        alto=float(panel_entity.alto),
+                        confianza_deteccion=panel_entity.confianza_deteccion,
                     )
-
-            mask_entities = await self._mask_artifact_repository.list(
-                appearance_id=appearance_entity.id
-            )
-            masks_by_appearance[appearance_entity.id] = [
-                MaskArtifactOutput(
-                    id=str(mask_entity.id),
-                    appearance_id=str(mask_entity.appearance_id),
-                    tipo_mascara=str(mask_entity.tipo_mascara),
-                    ruta_archivo=str(mask_entity.ruta_archivo),
-                    hash_sha256=str(mask_entity.hash_sha256),
-                    ancho=mask_entity.ancho,
-                    alto=mask_entity.alto,
                 )
-                for mask_entity in mask_entities
-            ]
 
-        characters_output = list(characters_by_id.values())
-        masks_output: list[MaskArtifactOutput] = []
-        for mask_list in masks_by_appearance.values():
-            masks_output.extend(mask_list)
+            appearances_output: list[CharacterAppearanceOutput] = []
+            appearance_entities = await self._character_appearance_repository.list(
+                page_id=analysis.page_id
+            )
+            characters_by_id: dict[UUID, CharacterOutput] = {}
+            masks_by_appearance: dict[UUID, list[MaskArtifactOutput]] = {}
 
-        return GetAnalysisOutput(
-            analysis_id=str(analysis.id),
-            page_id=str(analysis.page_id),
-            estado=str(analysis.estado),
-            confianza_global=analysis.confianza_global,
-            version_modelo=analysis.version_modelo,
-            panels=panels_output,
-            characters=characters_output,
-            appearances=appearances_output,
-            masks=masks_output,
-        )
+            for appearance_entity in appearance_entities:
+                appearances_output.append(
+                    CharacterAppearanceOutput(
+                        id=str(appearance_entity.id),
+                        page_id=str(appearance_entity.page_id),
+                        character_id=str(appearance_entity.character_id),
+                        panel_id=(
+                            str(appearance_entity.panel_id)
+                            if appearance_entity.panel_id is not None
+                            else None
+                        ),
+                        confianza_deteccion=appearance_entity.confianza_deteccion,
+                    )
+                )
+
+                character_id = appearance_entity.character_id
+                if character_id not in characters_by_id:
+                    character_entity = await self._character_repository.get(character_id=character_id)
+                    if character_entity is not None:
+                        characters_by_id[character_id] = CharacterOutput(
+                            id=str(character_entity.id),
+                            nombre=str(character_entity.nombre),
+                            descripcion=character_entity.descripcion,
+                            confianza_identidad=character_entity.confianza_identidad,
+                        )
+
+                mask_entities = await self._mask_artifact_repository.list(
+                    appearance_id=appearance_entity.id
+                )
+                masks_by_appearance[appearance_entity.id] = [
+                    MaskArtifactOutput(
+                        id=str(mask_entity.id),
+                        appearance_id=str(mask_entity.appearance_id),
+                        tipo_mascara=str(mask_entity.tipo_mascara),
+                        ruta_archivo=str(mask_entity.ruta_archivo),
+                        hash_sha256=str(mask_entity.hash_sha256),
+                        ancho=mask_entity.ancho,
+                        alto=mask_entity.alto,
+                    )
+                    for mask_entity in mask_entities
+                ]
+
+            characters_output = list(characters_by_id.values())
+            masks_output: list[MaskArtifactOutput] = []
+            for mask_list in masks_by_appearance.values():
+                masks_output.extend(mask_list)
+
+            logger.info(
+                "Análisis obtenido: %s (paneles: %d, personajes: %d, máscaras: %d)",
+                input_data.analysis_id,
+                len(panels_output),
+                len(characters_output),
+                len(masks_output),
+            )
+
+            return GetAnalysisOutput(
+                analysis_id=str(analysis.id),
+                page_id=str(analysis.page_id),
+                estado=str(analysis.estado),
+                confianza_global=analysis.confianza_global,
+                version_modelo=analysis.version_modelo,
+                panels=panels_output,
+                characters=characters_output,
+                appearances=appearances_output,
+                masks=masks_output,
+            )
+        except NotFoundError:
+            raise
+        except Exception as exc:  # pragma: no cover - infra failure path
+            logger.exception(
+                "Error al obtener análisis %s: %s", input_data.analysis_id, exc
+            )
+            raise

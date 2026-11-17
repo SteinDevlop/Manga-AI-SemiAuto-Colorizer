@@ -5,7 +5,6 @@ segmentation, and persistence of panels, appearances and mask artifacts,
 updating the analysis state. Depends on ai_engine Protocol adapters,
 never on concrete AI implementations.
 """
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -14,12 +13,15 @@ from uuid import UUID
 
 from app.ai_engine.contracts import CharacterDetector, PanelDetector, Segmenter
 from app.core.exceptions import NotFoundError
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class PageRepository(Protocol):
     """Port for page read operations."""
 
-    async def get_by_id(
+    async def get(
         self, *, page_id: UUID
     ) -> object | None:  # pragma: no cover - protocol stub
         """Return the page with the given ID, or None when not found."""
@@ -52,7 +54,7 @@ class CharacterRepository(Protocol):
         *,
         nombre: str,
         descripcion: str | None = None,
-        confianza_identidad: float | None = None,
+        confianza_identidad: float | None,
     ) -> object:
         """Create and persist a character, returning the persisted entity."""
         ...
@@ -79,7 +81,7 @@ class AnalysisRepository(Protocol):
     async def get_by_page_id(
         self, *, page_id: UUID
     ) -> object | None:  # pragma: no cover - protocol stub
-        """Return the analysis for the given page, or None when missing."""
+        """Return the analysis for the given page, or None when not found."""
         ...
 
     async def create(  # pragma: no cover - protocol stub
@@ -98,8 +100,8 @@ class AnalysisRepository(Protocol):
         *,
         analysis_id: UUID,
         estado: str | None = None,
-        confianza_global: float | None = None,
-        version_modelo: str | None = None,
+        confianza_global: float | None,
+        version_modelo: str | None,
     ) -> object | None:
         """Update analysis fields, returning the persisted entity or None."""
         ...
@@ -209,8 +211,8 @@ class AnalyzePageUseCase:
     """Analyze a manga page: panels, characters, masks and analysis state.
 
     Orchestrates the PanelDetector, CharacterDetector and Segmenter Protocol
-    adapters, persists panels, appearances and mask artifacts through injected
-    repository ports, stores mask files through the storage service, and
+    adapters, persists panels, characters, appearances and mask artifacts through
+    injected repository ports, stores mask files through the storage service, and
     updates the analysis state. No heavy inference runs here; adapters are
     mocks in this phase.
     """
@@ -246,35 +248,25 @@ class AnalyzePageUseCase:
         Raises:
             NotFoundError: when no page matches the given page_id.
         """
-        page = await self._page_repository.get_by_id(page_id=input_data.page_id)
-        if page is None:
-            raise NotFoundError(
-                message="Page not found.",
-                details={"field": "page_id", "reason": "not_found"},
-            )
+        try:
+            page = await self._page_repository.get(page_id=input_data.page_id)
+            if page is None:
+                logger.warning("Página no encontrada para análisis: %s", input_data.page_id)
+                raise NotFoundError(
+                    message="Page not found.",
+                    details={"field": "page_id", "reason": "not_found"},
+                )
 
-        image_path = str(page.ruta_archivo)
+            image_path = str(page.ruta_archivo)
 
-        # 1. Detect panels (S2).
-        panel_detections = self._panel_detector.detect(image_path, min_confidence=0.0)
+            # 1. Detect panels (S2).
+            panel_detections = self._panel_detector.detect(image_path, min_confidence=0.0)
 
-        panels_output: list[PanelOutput] = []
-        panel_entities: list[object] = []
-        for detection in panel_detections:
-            panel_entity = await self._panel_repository.create(
-                page_id=input_data.page_id,
-                numero_orden=int(detection["numero_orden"]),
-                x=float(detection["x"]),
-                y=float(detection["y"]),
-                ancho=float(detection["ancho"]),
-                alto=float(detection["alto"]),
-                confianza_deteccion=float(detection.get("confianza", 0.0)),
-            )
-            panel_entities.append(panel_entity)
-            panels_output.append(
-                PanelOutput(
-                    id=str(panel_entity.id),
-                    page_id=str(input_data.page_id),
+            panels_output: list[PanelOutput] = []
+            panel_entities: list[object] = []
+            for detection in panel_detections:
+                panel_entity = await self._panel_repository.create(
+                    page_id=input_data.page_id,
                     numero_orden=int(detection["numero_orden"]),
                     x=float(detection["x"]),
                     y=float(detection["y"]),
@@ -282,116 +274,144 @@ class AnalyzePageUseCase:
                     alto=float(detection["alto"]),
                     confianza_deteccion=float(detection.get("confianza", 0.0)),
                 )
-            )
-
-        # 2. Detect characters per panel (S3).
-        characters_output: list[CharacterOutput] = []
-        appearances_output: list[CharacterAppearanceOutput] = []
-        appearance_entities: list[object] = []
-        all_character_detections: list[dict] = []
-
-        for panel_entity in panel_entities:
-            character_detections = self._character_detector.detect(image_path, min_confidence=0.0)
-            all_character_detections.extend(character_detections)
-
-            for detection in character_detections:
-                character_entity = await self._character_repository.create(
-                    nombre=str(detection.get("etiqueta", "character")),
-                    descripcion=None,
-                    confianza_identidad=float(detection.get("confianza", 0.0)),
-                )
-                appearance_entity = await self._character_appearance_repository.create(
-                    page_id=input_data.page_id,
-                    character_id=character_entity.id,
-                    panel_id=panel_entity.id,
-                    confianza_deteccion=float(detection.get("confianza", 0.0)),
-                )
-                appearance_entities.append(appearance_entity)
-                characters_output.append(
-                    CharacterOutput(
-                        id=str(character_entity.id),
-                        nombre=str(detection.get("etiqueta", "character")),
-                        confianza_identidad=float(detection.get("confianza", 0.0)),
-                    )
-                )
-                appearances_output.append(
-                    CharacterAppearanceOutput(
-                        id=str(appearance_entity.id),
+                panel_entities.append(panel_entity)
+                panels_output.append(
+                    PanelOutput(
+                        id=str(panel_entity.id),
                         page_id=str(input_data.page_id),
-                        character_id=str(character_entity.id),
-                        panel_id=str(panel_entity.id),
+                        numero_orden=int(detection["numero_orden"]),
+                        x=float(detection["x"]),
+                        y=float(detection["y"]),
+                        ancho=float(detection["ancho"]),
+                        alto=float(detection["alto"]),
                         confianza_deteccion=float(detection.get("confianza", 0.0)),
                     )
                 )
 
-        # 3. Segment masks per appearance (S5).
-        masks_output: list[MaskArtifactOutput] = []
-        for appearance_entity in appearance_entities:
-            mask_detections = self._segmenter.segment(
-                image_path,
-                regions=[
-                    {
-                        "region_id": str(appearance_entity.id),
-                        "x": float(detection.get("x", 0.0)),
-                        "y": float(detection.get("y", 0.0)),
-                        "ancho": float(detection.get("ancho", 0.0)),
-                        "alto": float(detection.get("alto", 0.0)),
-                    }
-                    for detection in all_character_detections
-                ],
-            )
+            # 2. Detect characters per panel (S3).
+            characters_output: list[CharacterOutput] = []
+            appearances_output: list[CharacterAppearanceOutput] = []
+            appearance_entities: list[object] = []
+            all_character_detections: list[dict] = []
 
-            for mask_detection in mask_detections:
-                saved = self._storage_service.save(
-                    source_path=str(mask_detection["ruta_archivo"]),
-                    artifact_type="mask",
-                    original_name=None,
+            for panel_entity in panel_entities:
+                character_detections = self._character_detector.detect(image_path, min_confidence=0.0)
+                all_character_detections.extend(character_detections)
+
+                for detection in character_detections:
+                    character_entity = await self._character_repository.create(
+                        nombre=str(detection.get("etiqueta", "character")),
+                        descripcion=None,
+                        confianza_identidad=float(detection.get("confianza", 0.0)),
+                    )
+                    appearance_entity = await self._character_appearance_repository.create(
+                        page_id=input_data.page_id,
+                        character_id=character_entity.id,
+                        panel_id=panel_entity.id,
+                        confianza_deteccion=float(detection.get("confianza", 0.0)),
+                    )
+                    appearance_entities.append(appearance_entity)
+                    characters_output.append(
+                        CharacterOutput(
+                            id=str(character_entity.id),
+                            nombre=str(detection.get("etiqueta", "character")),
+                            confianza_identidad=float(detection.get("confianza", 0.0)),
+                        )
+                    )
+                    appearances_output.append(
+                        CharacterAppearanceOutput(
+                            id=str(appearance_entity.id),
+                            page_id=str(input_data.page_id),
+                            character_id=str(character_entity.id),
+                            panel_id=str(panel_entity.id),
+                            confianza_deteccion=float(detection.get("confianza", 0.0)),
+                        )
+                    )
+
+            # 3. Segment masks per appearance (S5).
+            masks_output: list[MaskArtifactOutput] = []
+            for appearance_entity in appearance_entities:
+                mask_detections = self._segmenter.segment(
+                    image_path,
+                    regions=[
+                        {
+                            "region_id": str(appearance_entity.id),
+                            "x": float(detection.get("x", 0.0)),
+                            "y": float(detection.get("y", 0.0)),
+                            "ancho": float(detection.get("ancho", 0.0)),
+                            "alto": float(detection.get("alto", 0.0)),
+                        }
+                        for detection in all_character_detections
+                    ],
                 )
-                mask_entity = await self._mask_artifact_repository.create(
-                    appearance_id=appearance_entity.id,
-                    tipo_mascara=str(mask_detection.get("tipo_mascara", "character")),
-                    ruta_archivo=str(saved["ruta_archivo"]),
-                    hash_sha256=str(saved["hash_sha256"]),
-                    ancho=mask_detection.get("ancho"),
-                    alto=mask_detection.get("alto"),
-                )
-                masks_output.append(
-                    MaskArtifactOutput(
-                        id=str(mask_entity.id),
-                        appearance_id=str(appearance_entity.id),
+
+                for mask_detection in mask_detections:
+                    saved = self._storage_service.save(
+                        source_path=str(mask_detection["ruta_archivo"]),
+                        artifact_type="mask",
+                        original_name=None,
+                    )
+                    mask_entity = await self._mask_artifact_repository.create(
+                        appearance_id=appearance_entity.id,
                         tipo_mascara=str(mask_detection.get("tipo_mascara", "character")),
                         ruta_archivo=str(saved["ruta_archivo"]),
                         hash_sha256=str(saved["hash_sha256"]),
                         ancho=mask_detection.get("ancho"),
                         alto=mask_detection.get("alto"),
                     )
+                    masks_output.append(
+                        MaskArtifactOutput(
+                            id=str(mask_entity.id),
+                            appearance_id=str(mask_entity.appearance_id),
+                            tipo_mascara=str(mask_detection.get("tipo_mascara", "character")),
+                            ruta_archivo=str(saved["ruta_archivo"]),
+                            hash_sha256=str(saved["hash_sha256"]),
+                            ancho=mask_detection.get("ancho"),
+                            alto=mask_detection.get("alto"),
+                        )
+                    )
+
+            # 4. Update or create the analysis record.
+            analysis = await self._analysis_repository.get_by_page_id(page_id=input_data.page_id)
+            if analysis is None:
+                analysis = await self._analysis_repository.create(
+                    page_id=input_data.page_id,
+                    estado="analysis_completed",
+                    confianza_global=0.0,
+                    version_modelo="mock-v1",
+                )
+            else:
+                analysis = await self._analysis_repository.update(
+                    analysis_id=analysis.id,
+                    estado="analysis_completed",
+                    confianza_global=0.0,
+                    version_modelo="mock-v1",
                 )
 
-        # 4. Update or create the analysis record.
-        analysis = await self._analysis_repository.get_by_page_id(page_id=input_data.page_id)
-        if analysis is None:
-            analysis = await self._analysis_repository.create(
-                page_id=input_data.page_id,
-                estado="analysis_completed",
-                confianza_global=0.0,
-                version_modelo="mock-v1",
-            )
-        else:
-            analysis = await self._analysis_repository.update(
-                analysis_id=analysis.id,
-                estado="analysis_completed",
-                confianza_global=0.0,
-                version_modelo="mock-v1",
+            logger.info(
+                "Análisis completado: %s (página: %s, paneles: %d, personajes: %d, máscaras: %d)",
+                analysis.id,
+                input_data.page_id,
+                len(panels_output),
+                len(characters_output),
+                len(masks_output),
             )
 
-        return AnalyzePageOutput(
-            analysis_id=str(analysis.id),
-            page_id=str(input_data.page_id),
-            estado=str(analysis.estado),
-            confianza_global=analysis.confianza_global,
-            version_modelo=analysis.version_modelo,
-            panels=panels_output,
-            characters=characters_output,
-            appearances=appearances_output,
-            masks=masks_output,
-        )
+            return AnalyzePageOutput(
+                analysis_id=str(analysis.id),
+                page_id=str(input_data.page_id),
+                estado=str(analysis.estado),
+                confianza_global=analysis.confianza_global,
+                version_modelo=analysis.version_modelo,
+                panels=panels_output,
+                characters=characters_output,
+                appearances=appearances_output,
+                masks=masks_output,
+            )
+        except NotFoundError:
+            raise
+        except Exception as exc:  # pragma: no cover - infra failure path
+            logger.exception(
+                "Error al analizar página %s: %s", input_data.page_id, exc
+            )
+            raise

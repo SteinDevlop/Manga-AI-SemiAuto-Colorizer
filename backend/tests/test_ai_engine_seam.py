@@ -5,6 +5,7 @@ is raised when the model is not available (no silent failure), and that mock
 adapters still work as fallback.
 """
 
+import os
 import pytest
 from app.ai_engine.adapters.real import (
     ModelUnavailableError,
@@ -55,6 +56,12 @@ def test_real_adapter_raises_when_model_not_available():
     with pytest.raises(ModelUnavailableError):
         segmenter.segment("fake_page.png", regions=[])
 
+    # Forzar que no haya checkpoint disponible para comprobar el fallback
+    # controlado (ModelUnavailableError) en lugar de fallar silenciosamente.
+    os.environ["SUMI_COLORIZATION_CHECKPOINT"] = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "no_such_checkpoint.pt",
+    )
     engine = RealColorizationEngine()
     with pytest.raises(ModelUnavailableError):
         engine.colorize(
