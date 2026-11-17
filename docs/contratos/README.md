@@ -14,6 +14,7 @@ This directory documents the explicit contracts between the backend, the Celery 
 | Celery tasks | `celery-tasks.md` | Serializable task IDs and parameters |
 | Progress events | `progress-events.md` | `job_id`, `stage`, `progress`, `message`, `timestamp` |
 | DTO schemas | `dto-schemas.md` | Versioned DTOs and AI engine protocol interfaces |
+| API endpoints (Fase 1) | `api-endpoints.md` | Projects stage/metrics, Model Registry, identifiers rule (page_id vs analysis_id) |
 
 ## Source of truth
 

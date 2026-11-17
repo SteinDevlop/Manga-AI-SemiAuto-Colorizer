@@ -22,6 +22,10 @@ All entity, job, and artifact identifiers are UUIDs (version 4 preferred). Ident
 | model_manifest_id | ModelManifest | Backend / ML engineer |
 | request_id | API error / log correlation | Backend (per request) |
 
+## Regla de análisis vigente (defecto 0.9)
+
+Una página (`page_id`) puede tener varios análisis (`analysis_id`) si se vuelve a ejecutar el análisis. El análisis **vigente** es el más reciente creado para esa página. El detalle del proyecto (`GET /api/v1/projects/{project_id}`) expone, por página, el `analysis_id` vigente, y el frontend debe usarlo (nunca el `page_id`) en las rutas que esperan el ID del análisis (`POST /api/v1/analysis/{analysis_id}/approve`, `POST /api/v1/colorizations`).
+
 ## Serialization
 
 UUIDs are serialized as lowercase canonical strings (e.g. `550e8400-e29b-41d4-a716-446655440000`) in JSON payloads, query parameters, WebSocket messages, and Celery task arguments.
