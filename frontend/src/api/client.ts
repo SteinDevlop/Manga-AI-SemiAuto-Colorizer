@@ -80,6 +80,42 @@ export const api = {
     request<void>(`${API_BASE}/projects/${projectId}`, {
       method: "DELETE",
     }),
+  getProject: (projectId: string) =>
+    request<{
+      id: string;
+      nombre: string;
+      descripcion: string | null;
+      tipo: string | null;
+      portada: string | null;
+      current_stage: string;
+      status: string;
+      stage_progress: string[];
+      progreso: number;
+      created_at: string | null;
+      updated_at: string | null;
+      pages: Array<{
+        page_id: string;
+        nombre_archivo_original: string;
+        ruta_archivo: string;
+        estado: string;
+        analysis_id: string | null;
+        analysis_estado: string | null;
+        created_at: string | null;
+      }>;
+    }>(`${API_BASE}/projects/${projectId}`),
+  transitionStage: (projectId: string, action: string, stage: string) =>
+    request<{
+      project_id: string;
+      action: string;
+      stage: string;
+      current_stage: string;
+      status: string;
+      stage_progress: string[];
+      progreso: number;
+    }>(`${API_BASE}/projects/${projectId}/stage`, {
+      method: "PATCH",
+      body: JSON.stringify({ action, stage }),
+    }),
   getMetrics: () =>
     request<{
       total_proyectos: number;

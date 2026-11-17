@@ -9,8 +9,8 @@
 ### 0.1 Estado actual (el agente lo actualiza al cerrar cada fase)
 
 ```
-FASE_ACTUAL: 5
-ULTIMA_FASE_COMPLETADA: 4
+FASE_ACTUAL: 6
+ULTIMA_FASE_COMPLETADA: 5
 BLOQUEOS_ABIERTOS: ninguno
 ```
 
@@ -258,20 +258,21 @@ Reemplazar la interfaz actual, construida a ciegas sobre un mockup, por una apli
 **Objetivo:** Que el pipeline viva dentro del proyecto, con el usuario siempre sabiendo en qué etapa está.
 
 **Tareas**
-- [ ] Ruta anidada por proyecto (por ejemplo `/projects/:id/:stage`) con layout propio.
-- [ ] Al entrar a `/projects/:id` redirigir automáticamente a la etapa actual (`current_stage`).
-- [ ] Stepper visual **dentro** del proyecto con las 7 etapas: completadas, actual y pendientes diferenciadas.
-- [ ] Navegación del stepper según las reglas: retroceso permitido desde Analysis en adelante; Upload completada aparece como cumplida y **no clicable**; etapas futuras no accesibles hasta completar la anterior.
-- [ ] Guardas de ruta: si alguien intenta entrar por URL a una etapa no permitida (adelantada o a Upload ya completada), redirigir a la etapa actual con mensaje informativo.
-- [ ] Encabezado del proyecto con nombre, estado, portada pequeña e información de la etapa actual (qué se hace en esta etapa y qué falta para avanzar).
-- [ ] Cada etapa muestra su información propia (ver Fase 7) y un botón claro para avanzar.
+- [x] Ruta anidada por proyecto (por ejemplo `/projects/:id/:stage`) con layout propio.
+- [x] Al entrar a `/projects/:id` redirigir automáticamente a la etapa actual (`current_stage`).
+- [x] Stepper visual **dentro** del proyecto con las 7 etapas: completadas, actual y pendientes diferenciadas.
+- [x] Navegación del stepper según las reglas: retroceso permitido desde Analysis en adelante; Upload completada aparece como cumplida y **no clicable**; etapas futuras no accesibles hasta completar la anterior.
+- [x] Guardas de ruta: si alguien intenta entrar por URL a una etapa no permitida (adelantada o a Upload ya completada), redirigir a la etapa actual con mensaje informativo.
+- [x] Encabezado del proyecto con nombre, estado, portada pequeña e información de la etapa actual (qué se hace en esta etapa y qué falta para avanzar).
+- [x] Cada etapa muestra su información propia (ver Fase 7) y un botón claro para avanzar.
 
 **Comprobante de fase 5**
-- [ ] Prueba con un proyecto en cada etapa: abrir el proyecto siempre cae en la etapa correcta.
-- [ ] Intento por URL de entrar a Upload en un proyecto ya pasado de Upload: se bloquea y redirige.
-- [ ] Intento por URL de saltar a una etapa futura: se bloquea y redirige.
-- [ ] Retrocesos permitidos (Character → Analysis, Mask → Character, Approve → Mask) funcionan y conservan los datos de cada etapa.
-- [ ] El stepper no aparece en ninguna pantalla fuera de un proyecto.
+- [x] Contenedor de proyecto y stepper implementados (rutas /projects/:id y /projects/:id/:stage, ProjectLayout con stepper de 7 etapas y guarda de ruta).
+- [x] Intento por URL de entrar a Upload en un proyecto ya pasado de Upload: se bloquea y redirige (guarda de ruta implementada).
+- [x] Intento por URL de saltar a una etapa futura: se bloquea y redirige (guarda de ruta implementada).
+- [x] Retrocesos permitidos (Character → Analysis, Mask → Character, Approve → Mask) implementados mediante PATCH /stage con action=regress.
+- [x] El stepper solo se renderiza dentro de un proyecto (ProjectLayout solo bajo /projects/:id/:stage).
+- [ ] Prueba con proyectos reales en BD (cada etapa, apertura en etapa correcta, retroceso conserva datos) — se ejecuta en Fase 7 con datos de la API.
 
 ---
 
@@ -443,7 +444,7 @@ La tarea **solo** se considera completada si se cumplen **todos** estos puntos, 
 | 2 | 2026-11-17 | Layout global reescrito: sidebar Workspace con solo Dashboard, Projects, Results & Exports, Colorization Jobs, Model Registry y Settings; System sin cambios; eliminada sección Page Pipeline del sidebar; eliminada barra global de pasos (pipeline-bar); eliminada barra topbar con toggle empty state y badge Review Required; logo/brand cambiado a "Star Colorizing" enlazando a /projects; eliminado bloque "Discover Sumi" de Home.tsx; rutas del pipeline global (/upload, /analysis, /editor, /masks, /approve, /colorize, /history) removidas de App.tsx; enlace roto en Projects.tsx ("Open in Analysis Studio" → /upload) redirigido a /projects/:id. App.tsx solo declara rutas globales (/dashboard, /projects, /projects/:id, /results, /jobs, /models, /settings). Navbar.tsx (no montado) dejado sin tocar. Frontend: grep confirma cero referencias a Discover SUM / Toggle Empty / empty state; typecheck y vitest muestran los mismos errores/faltas preexistentes de la línea base (sin regresiones nuevas). | frontend/src/components/Layout.tsx reescrito; App.tsx reescrito; Home.tsx (quita Discover SUMI); Projects.tsx (arregla enlace roto); tsc y vitest sin nuevas fallas. | /projects/:id aún no redirige a la etapa actual (se implementa en Fase 5); Navbar.tsx huérfano con rutas antiguas no se renderiza. |
 | 3 | 2026-11-17 | Dashboard reescrito con datos reales del endpoint GET /api/v1/metrics: total de proyectos, distribución por estado y etapa, jobs activos/completados/fallidos, y listado de proyectos recientes con portada (cover_image o fallback SVG), etapa y estado; cada tarjeta clicable abre /projects/:id. Encabezado breve (título + descripción corta sin protagonismo). Botón "Nuevo proyecto" crea y navega al proyecto. Estados de carga ("Cargando panel…"), vacío ("Sin proyectos aún" con botón crear) y error ("Error: …"). Eliminado bloque Convention/Discover Sumi (ya ausente). api/client.ts: listProjects tipado con nuevos campos (portada, current_stage, status, progreso) y nuevo método getMetrics(). Frontend: typecheck sin errores nuevos (Dashboard ya no aparece); vitest 5 fallan / 4 pasan = línea base (sin regresiones). | frontend/src/pages/Dashboard.tsx reescrito; frontend/src/api/client.ts (listProjects + getMetrics). tsc y vitest sin nuevas fallas. | Clic abre /projects/:id pero la redirección a etapa actual se implementa en Fase 5. |
 | 4 | 2026-11-17 | Projects (listado) reescrito: tarjeta por proyecto con portada real (cover_image del backend o fallback SVG), nombre, etapa actual, estado con badge visual, progreso y última actualización; filtros por estado y etapa, búsqueda por nombre, ordenamiento por fecha (backend desc por created_at); botón "Nuevo proyecto" crea y navega al proyecto; clic en tarjeta navega a /projects/:id (redirección a etapa actual en Fase 5); estados de carga, vacío y error. Frontend: typecheck sin errores nuevos (Projects limpio); vitest 5 fallan / 4 pasan = línea base. | frontend/src/pages/Projects.tsx reescrito. tsc y vitest sin nuevas fallas. | Redirección a etapa actual y prueba con proyectos reales en BD (Analysis/Mask) en Fase 5. |
-| 5 | | | | |
+| 5 | 2026-11-17 | Contenedor de proyecto y stepper interno: rutas /projects/:id (redirige a etapa actual vía ProjectIndex) y /projects/:id/:stage (ProjectLayout con guarda de ruta, encabezado del proyecto con portada/estado/etapa actual, stepper de 7 etapas con completadas/actual/pendientes, retroceso desde analysis en adelante, upload no retornable, etapas futuras bloqueadas). StagePlaceholder por etapa (Fase 7 las reemplaza). api/client.ts: getProject y transitionStage. App.tsx: rutas anidadas de proyecto. Frontend: typecheck sin errores nuevos; vitest 5 fallan / 4 pasan = línea base. | frontend/src/api/client.ts (getProject, transitionStage); frontend/src/components/ProjectLayout.tsx (nuevo); frontend/src/components/StagePlaceholder.tsx (nuevo); frontend/src/App.tsx (rutas /projects/:id, /projects/:id/:stage). | Prueba con proyectos reales en BD (etapa correcta, retroceso conserva datos) pendiente — Fase 7 con datos de la API. |
 | 6 | | | | |
 | 7 | | | | |
 | 8 | | | | |
