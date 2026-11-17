@@ -1,0 +1,49 @@
+experiment:
+  name: sumi_unet_cpu_v1
+  seed: 42
+  output_dir: artifacts/checkpoints/sumi_unet_cpu_v1
+
+device:
+  accelerator: cpu
+  num_threads: 4
+
+data:
+  manifest: model-creation/dataset/manifests/pairs.csv
+  train_split: train
+  validation_split: validation
+  patch_size: 256
+  patches_per_page: 1
+  preserve_aspect_ratio: true
+  color_space: RGB
+  input_channels: 1
+  target_channels: 3
+  normalize_input: true
+  normalize_target: true
+
+model:
+  name: small_unet
+  input_channels: 1
+  target_channels: 3
+  base_channels: 32
+  depth: 4
+  output_activation: sigmoid
+
+training:
+  epochs: 5
+  batch_size: 1
+  gradient_accumulation_steps: 1
+  learning_rate: 0.0001
+  weight_decay: 0.00001
+  optimizer: adam
+  loss:
+    l1_weight: 1.0
+    ssim_weight: 0.0
+  early_stopping:
+    enabled: true
+    patience: 6
+  checkpoint_every_epochs: 1
+  num_workers: 0
+
+evaluation:
+  test_split: test
+  save_visual_samples: true
