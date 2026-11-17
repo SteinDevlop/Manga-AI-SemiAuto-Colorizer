@@ -172,10 +172,10 @@ export const api = {
       method: "POST",
     }),
   createColorization: (analysisId: string) =>
-    request<{ job_id: string; analysis_id: string; estado: string; progreso: number; mensaje: string | null }>(`${API_BASE}/colorizations`, {
-      method: "POST",
-      body: JSON.stringify({ analysis_id: analysisId }),
-    }),
+    request<{ job_id: string; analysis_id: string; estado: string; progreso: number; mensaje: string | null }>(
+      `${API_BASE}/colorizations?analysis_id=${encodeURIComponent(analysisId)}`,
+      { method: "POST" }
+    ),
   getColorization: (jobId: string) =>
     request<{ job_id: string; analysis_id: string; estado: string; progreso: number; mensaje: string | null; ruta_resultado: string | null; version_modelo: string | null }>(`${API_BASE}/colorizations/${jobId}`),
 };
