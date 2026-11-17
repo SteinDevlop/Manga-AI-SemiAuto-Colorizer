@@ -1,20 +1,18 @@
-/** Punto de entrada de la aplicación React con enrutado. */
-
+/** Punto de entrada de la aplicación React con enrutado.
+ *
+ * Solo rutas globales (Workspace + System). El pipeline de cada proyecto
+ * (Upload → Analysis → Character → Mask → Approve → Colorize → Export) vive
+ * dentro de la ruta anidada /projects/:id, implementada en la Fase 5.
+ */
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
-import { Upload } from "./pages/Upload";
-import Analysis from "./pages/Analysis";
-import Masks from "./pages/Masks";
-import Editor from "./pages/Editor";
+import Results from "./pages/Results";
 import Jobs from "./pages/Jobs";
 import Models from "./pages/Models";
 import Settings from "./pages/Settings";
-import Review from "./pages/Review";
-import Colorize from "./pages/Colorize";
-import History from "./pages/History";
 
 export default function App() {
   return (
@@ -24,13 +22,8 @@ export default function App() {
           <Route index element={<Home />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="projects" element={<Projects />} />
-          <Route path="upload" element={<Upload />} />
-          <Route path="analysis/:analysisId" element={<Analysis />} />
-          <Route path="editor/:characterId" element={<Editor />} />
-          <Route path="masks" element={<Masks />} />
-          <Route path="approve/:analysisId" element={<Review />} />
-          <Route path="colorize/:analysisId" element={<Colorize />} />
-          <Route path="history" element={<History />} />
+          <Route path="projects/:id" element={<Projects />} />
+          <Route path="results" element={<Results />} />
           <Route path="jobs" element={<Jobs />} />
           <Route path="models" element={<Models />} />
           <Route path="settings" element={<Settings />} />

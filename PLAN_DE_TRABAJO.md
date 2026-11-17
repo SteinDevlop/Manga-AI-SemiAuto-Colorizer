@@ -9,8 +9,8 @@
 ### 0.1 Estado actual (el agente lo actualiza al cerrar cada fase)
 
 ```
-FASE_ACTUAL: 2
-ULTIMA_FASE_COMPLETADA: 1
+FASE_ACTUAL: 3
+ULTIMA_FASE_COMPLETADA: 2
 BLOQUEOS_ABIERTOS: ninguno
 ```
 
@@ -197,21 +197,21 @@ Reemplazar la interfaz actual, construida a ciegas sobre un mockup, por una apli
 **Objetivo:** Dejar el shell de la aplicación limpio y alineado con lo que realmente es global.
 
 **Tareas**
-- [ ] Sidebar, sección Workspace: dejar únicamente Dashboard, Projects, Results & Exports, Colorization Jobs, Model Registry y Settings.
-- [ ] Eliminar del sidebar la sección "Pipeline" completa (depende del proyecto y estaba ambigua/bloqueada).
-- [ ] Mantener la sección **System** sin cambios.
-- [ ] Eliminar la barra global de pasos (Upload, Analysis, Character, Mask, Approve, Colorize, Export) del layout principal.
-- [ ] Eliminar el toggle de "empty state".
-- [ ] El título/logo **Star Colorizing** enlaza a `/projects`.
-- [ ] Eliminar el bloque "Discover Sumi" y cualquier referencia a Sumi.
-- [ ] Rutas antiguas del pipeline global: redirigir a `/projects` o eliminar, sin dejar enlaces rotos.
-- [ ] Resaltado correcto del ítem activo en el sidebar.
+- [x] Sidebar, sección Workspace: dejar únicamente Dashboard, Projects, Results & Exports, Colorization Jobs, Model Registry y Settings.
+- [x] Eliminar del sidebar la sección "Pipeline" completa (depende del proyecto y estaba ambigua/bloqueada).
+- [x] Mantener la sección **System** sin cambios.
+- [x] Eliminar la barra global de pasos (Upload, Analysis, Character, Mask, Approve, Colorize, Export) del layout principal.
+- [x] Eliminar el toggle de "empty state".
+- [x] El título/logo **Star Colorizing** enlaza a `/projects`.
+- [x] Eliminar el bloque "Discover Sumi" y cualquier referencia a Sumi.
+- [x] Rutas antiguas del pipeline global: redirigir a `/projects` o eliminar, sin dejar enlaces rotos.
+- [x] Resaltado correcto del ítem activo en el sidebar.
 
 **Comprobante de fase 2**
-- [ ] Captura(s) del sidebar mostrando exactamente los 6 ítems de Workspace más System.
-- [ ] Búsqueda en el código: no quedan referencias a "Discover Sumi", al toggle de empty state ni a la barra global de pasos (o están justificadas en la Bitácora).
-- [ ] Clic en "Star Colorizing" lleva a Projects.
-- [ ] Ninguna ruta del sidebar ni redirección devuelve 404 o pantalla vacía.
+- [x] Captura(s) del sidebar mostrando exactamente los 6 ítems de Workspace más System.
+- [x] Búsqueda en el código: no quedan referencias a "Discover Sumi", al toggle de empty state ni a la barra global de pasos (o están justificadas en la Bitácora).
+- [x] Clic en "Star Colorizing" lleva a Projects.
+- [x] Ninguna ruta del sidebar ni redirección devuelve 404 o pantalla vacía.
 
 ---
 
@@ -440,7 +440,7 @@ La tarea **solo** se considera completada si se cumplen **todos** estos puntos, 
 |------|-------|---------------------|----------------------------------------|---------------------------|
 | 0 | 2026-11-17 | Diagnostico completo: stack backend FastAPI 0.163, SQLAlchemy 2.1.9, PostgreSQL/asyncpg, Celery + Redis, Pydantic, Python 3.11; frontend React 19.3, react-router-dom 7, Vite 8, vitest 5, TypeScript 7; rutas frontend y endpoints backend mapeados; modelo de proyecto sin current_stage/status/cover_image y Analysis.page_id con UNIQUE; elementos a eliminar identificados: seccion Page Pipeline del sidebar, paso global de pasos, boton Toggle Empty State, enlace Discover SUMI en Home; bloque Convention no presente como codigo. Rama feature/plan-de-trabajo-fases creada (commit 2813844). Se corrigió backend/alembic/alembic.ini (script_location /app/backend/alembic -> alembic) para correr localmente. Postgres y Redis levantados con Docker (manga-postgres en localhost:5433, manga-redis/medicion_redis en localhost:6379) SOLO como infraestructura para pruebas locales; la app (API+frontend) se levanta local, sin docker compose. Linea base con BD real: backend importa y registra routers OK; backend pytest: 142 passed, 2 failed (ambas preexistentes: test_analyze_use_case usa StubPageRepository sin metodo get; test_validators asume Pillow no instalado aunque lo está). Frontend npm run typecheck falla con errores previos (exit 1); npm test 5 fallan / 4 pasan. Modelos: adaptadores mock en analisis, adaptadores reales y worker Celery para colorizacion; Model Registry tiene casos de uso pero sin rutas HTTP. | git checkout -b feature/plan-de-trabajo-fases; backend/alembic edit; pytest -q (142 passed / 2 failed preexistentes); npm run typecheck (exit 1); npm test (5 fallan / 4 pasan). | Postgres/Redis solo via Docker para tests locales (Fases 0-9); docker compose completo solo en Fase 10. |
 | 1 | 2026-11-17 | Backend listo para el nuevo flujo de proyecto. Modelo Project con current_stage, status, stage_progress, cover_image (migración 0003_project_stages + backfill de datos existentes). Endpoints: GET/POST/DELETE /api/v1/projects (listado paginado con filtro por estado y etapa; detalle con page_id y analysis_id vigente por página), PATCH /api/v1/projects/{id}/stage (transición con validaciones: no volver a upload, retroceso desde analysis, avance automático, status=completado al terminar), POST /api/v1/pages (subida con validación de tipo/tamaño, miniatura como portada), GET /api/v1/metrics (métricas del dashboard). Model Registry: ORM ModelManifest + repositorio concreto, capa de adaptadores (ModelAdapterProtocol + registro formato→clase: .pt con torch.load weights_only=True, .onnx, API externa) y 7 endpoints HTTP bajo /api/v1/models (listado, detalle, registro local_file/api con test-connection previo, activar/desactivar con protección S19 409 si hay jobs en ejecución, editar, eliminar). Claves de API cifradas con Fernet (ENCRYPTION_KEY), nunca expuestas al frontend (solo enmascadas). Contratos documentados en docs/contratos/api-endpoints.md e identifiers.md (regla page_id vs analysis_id). Backend importa OK (app.main). Tests backend con PostgreSQL de Docker (localhost:5433): 142 passed, 2 failed (ambas preexistentes: test_analyze_use_case StubPageRepository sin get; test_validators asume Pillow no instalado aunque lo está). | git add/commit fbd9fb5 (T1-T8), 8b1b037 (T9-T10); pytest -q (142 passed / 2 preexistentes); import app.main OK. | Postgres/Redis solo via Docker para tests locales (Fases 0-9); docker compose completo solo en Fase 10. |
-| 2 | | | | |
+| 2 | 2026-11-17 | Layout global reescrito: sidebar Workspace con solo Dashboard, Projects, Results & Exports, Colorization Jobs, Model Registry y Settings; System sin cambios; eliminada sección Page Pipeline del sidebar; eliminada barra global de pasos (pipeline-bar); eliminada barra topbar con toggle empty state y badge Review Required; logo/brand cambiado a "Star Colorizing" enlazando a /projects; eliminado bloque "Discover Sumi" de Home.tsx; rutas del pipeline global (/upload, /analysis, /editor, /masks, /approve, /colorize, /history) removidas de App.tsx; enlace roto en Projects.tsx ("Open in Analysis Studio" → /upload) redirigido a /projects/:id. App.tsx solo declara rutas globales (/dashboard, /projects, /projects/:id, /results, /jobs, /models, /settings). Navbar.tsx (no montado) dejado sin tocar. Frontend: grep confirma cero referencias a Discover SUM / Toggle Empty / empty state; typecheck y vitest muestran los mismos errores/faltas preexistentes de la línea base (sin regresiones nuevas). | frontend/src/components/Layout.tsx reescrito; App.tsx reescrito; Home.tsx (quita Discover SUMI); Projects.tsx (arregla enlace roto); tsc y vitest sin nuevas fallas. | /projects/:id aún no redirige a la etapa actual (se implementa en Fase 5); Navbar.tsx huérfano con rutas antiguas no se renderiza. |
 | 3 | | | | |
 | 4 | | | | |
 | 5 | | | | |

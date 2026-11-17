@@ -1,74 +1,75 @@
-/* SUMI Layout — app shell: sidebar (sticky) + main col, topbar, pipeline stepper. */
+/* Layout de la aplicación Star Colorizing.
+ *
+ * Shell global: sidebar (sticky) + columna principal. Solo contiene secciones
+ * globales (Workspace) y System. El pipeline (Upload → Export) vive dentro de
+ * cada proyecto, no fuera de él, por lo que aquí no hay barra de pasos ni
+ * sección Pipeline del sidebar.
+ */
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 
-import { Outlet, useLocation } from "react-router-dom";
-
-const NAV_ITEMS = [
-  { id: "dashboard", label: "01 / Dashboard", path: "/" },
-  { id: "projects", label: "02 / Projects", path: "/projects" },
-  { id: "analysis", label: "04 / Analysis Studio", path: "/analysis/:analysisId" },
-  { id: "characters", label: "05 / Character & Color", path: "/editor/:characterId" },
-  { id: "masks", label: "06 / Mask Editor", path: "/editor/:characterId" },
-  { id: "review", label: "07 / Review & Approval", path: "/approve/:analysisId" },
-  { id: "colorize", label: "08 / Colorize Center", path: "/colorize/:analysisId" },
-  { id: "results", label: "09 / Results & Export", path: "/history" },
-  { id: "jobs", label: "Colorization Jobs", path: "/history" },
-  { id: "models", label: "10 / Model Registry", path: "/history" },
-  { id: "settings", label: "11 / Settings", path: "/history" },
+const WORKSPACE_ITEMS = [
+  { id: "dashboard", label: "Dashboard", path: "/" },
+  { id: "projects", label: "Projects", path: "/projects" },
+  { id: "results", label: "Results & Exports", path: "/results" },
+  { id: "jobs", label: "Colorization Jobs", path: "/jobs" },
+  { id: "models", label: "Model Registry", path: "/models" },
+  { id: "settings", label: "Settings", path: "/settings" },
 ];
 
-const PIPE_STEPS = [
-  { id: "projects", label: "1. Upload", done: true },
-  { id: "analysis", label: "2. Analysis", done: false },
-  { id: "characters", label: "3. Characters", done: false },
-  { id: "masks", label: "4. Masks", done: false },
-  { id: "review", label: "5. Approve", done: false },
-  { id: "colorize", label: "6. Colorize", done: false, disabled: true },
-  { id: "results", label: "7. Export", done: false, disabled: true },
-];
+// System se mantiene sin cambios (sin ítems de pipeline).
+const SYSTEM_ITEMS: Array<{ id: string; label: string; path: string }> = [];
 
 export function Layout() {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const isActive = (path: string) => {
+    if (path === "/") {
+      return location.pathname === "/";
+    }
+    return location.pathname === path || location.pathname.startsWith(`${path}/`);
+  };
 
   return (
     <div className="app-shell">
       {/* Sidebar */}
       <aside className="sidebar">
         <div className="brand">
-          <span className="brand-seal" aria-hidden="true">
-            墨
-          </span>
-          <div>
-            <div className="brand-name">SUMI</div>
-            <div className="brand-sub">STUDIO v1.0</div>
-          </div>
+          <button
+            className="brand-button"
+            aria-label="Ir a Projects"
+            onClick={() => navigate("/projects")}
+          >
+            <span className="brand-seal" aria-hidden="true">
+              墨
+            </span>
+            <div>
+              <div className="brand-name">Star Colorizing</div>
+              <div className="brand-sub">Studio</div>
+            </div>
+          </button>
         </div>
 
         <div className="nav-group-label">Workspace</div>
-        {NAV_ITEMS.map((item) => (
+        {WORKSPACE_ITEMS.map((item) => (
           <button
-            key={item.id}
-            className={`nav-item ${location.pathname.startsWith(item.path.replace("/:analysisId", "").replace("/:characterId", "")) || item.id === "dashboard" && location.pathname === "/" ? "is-active" : ""}`}
+            key={`workspace-${item.id}`}
+            className={`nav-item ${isActive(item.path) ? "is-active" : ""}`}
             data-nav={item.id}
+            onClick={() => navigate(item.path)}
           >
             {item.label}
           </button>
         ))}
 
-        <div className="nav-group-label">Page Pipeline</div>
-        {PIPE_STEPS.map((step) => (
-          <button
-            key={step.id}
-            className={`nav-item ${step.done ? "is-active" : ""} ${step.disabled ? "" : ""}`}
-            disabled={step.disabled}
-            data-nav={step.id}
-          >
-            {step.label}
-          </button>
-        ))}
-
         <div className="nav-group-label">System</div>
-        {NAV_ITEMS.slice(8).map((item) => (
-          <button key={item.id} className="nav-item" data-nav={item.id}>
+        {SYSTEM_ITEMS.map((item) => (
+          <button
+            key={`system-${item.id}`}
+            className="nav-item"
+            data-nav={item.id}
+            onClick={() => navigate(item.path)}
+          >
             {item.label}
           </button>
         ))}
@@ -79,33 +80,19 @@ export function Layout() {
         {/* Top Bar */}
         <header className="topbar">
           <div className="breadcrumbs">
-            <span>SUMI Studio</span> /{" "}
+            <span>Star Colorizing</span>{" "}
             <strong>
-              {location.pathname === "/" ? "Dashboard" : location.pathname.split("/").pop() ?? "Studio"}
+              {location.pathname === "/"
+                ? "Dashboard"
+                : location.pathname.split("/").pop() ?? "Studio"}
             </strong>
           </div>
           <div className="topbar-right">
-            <span className="badge badge-review">Review Required</span>
-            <button className="btn btn-outline btn-sm">Toggle Empty State</button>
-            <button className="btn btn-vermilion btn-sm">+ New Project</button>
+            <button className="btn btn-vermilion btn-sm" onClick={() => navigate("/projects")}>
+              + Nuevo proyecto
+            </button>
           </div>
         </header>
-
-        {/* Pipeline Stepper */}
-        <nav className="pipeline-bar" aria-label="Colorization Pipeline">
-          {PIPE_STEPS.map((step, i) => (
-            <>
-              <button
-                className={`pipe-step ${step.done ? "is-done" : ""} ${step.disabled ? "" : ""}`}
-                disabled={step.disabled}
-                data-nav={step.id}
-              >
-                {step.label}
-              </button>
-              {i < PIPE_STEPS.length - 1 && <span className="pipe-sep">→</span>}
-            </>
-          ))}
-        </nav>
 
         <main className="workspace">
           <Outlet />
