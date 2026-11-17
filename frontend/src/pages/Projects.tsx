@@ -1,30 +1,75 @@
-/* SUMI Projects — project list connected to the API. */
+/* Projects — listado de proyectos con portada real, etapa y estado. */
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
-import { useApp } from "../context/AppContext";
 
-const badgeConfig: Record<string, { className: string; text: string }> = {
-  review: { className: "badge badge-review", text: "Review Required" },
-  done: { className: "badge badge-done", text: "Completed" },
-  running: { className: "badge badge-running", text: "Analyzing" },
+type ProjectCard = {
+  id: string;
+  nombre: string;
+  descripcion: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+  tipo: string | null;
+  portada: string | null;
+  current_stage: string;
+  status: string;
+  progreso: number;
+};
+
+const STAGE_ORDER: string[] = ["upload", "analysis", "character", "mask", "approve", "colorize", "export"];
+
+const stageLabel = (s: string) => {
+  const labels: Record<string, string> = {
+    upload: "Subida",
+    analysis: "Análisis",
+    character: "Personajes",
+    mask: "Máscara",
+    approve: "Aprobación",
+    colorize: "Colorización",
+    export: "Exportar",
+  };
+  return labels[s] || s;
+};
+
+const statusConf: Record<string, { className: string; text: string }> = {
+  en_progreso: { className: "badge badge-running", text: "En progreso" },
+  completado: { className: "badge badge-done", text: "Completado" },
+  con_error: { className: "badge badge-failed", text: "Con error" },
+  procesando: { className: "badge badge-running", text: "Procesando" },
+};
+
+const projectCover = (p: ProjectCard) => {
+  if (p.portada) return p.portada;
+  return "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='400'><rect width='300' height='400' fill='%23efece4'/><rect x='16' y='16' width='268' height='120' fill='%23fff' stroke='%23111' stroke-width='2'/><rect x='16' y='148' width='268' height='236' fill='%23fff' stroke='%23111' stroke-width='2'/></svg>";
 };
 
 export default function Projects() {
-  const [projects, setProjects] = useState<Array<{ id: string; nombre: string; descripcion: string | null; created_at: string | null }>>([]);
+  const navigate = useNavigate();
+  const [projects, setProjects] = useState<ProjectCard[]>([]);
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
-  const navigate = useNavigate();
-  const { setProjectId, setAnalysisId, setJobId } = useApp();
+  // Filtros
+  const [filtroEstado, setFiltroEstado] = useState("");
+  const [filtroEtapa, setFiltroEtapa] = useState("");
+  const [busqueda, setBusqueda] = useState("");
 
   useEffect(() => {
+    let cancelled = false;
+    setLoaded(false);
     api.listProjects()
-      .then((data: any[]) => setProjects(data))
-      .catch(() => setProjects([]))
-      .finally(() => setLoaded(true));
+      .then((data) => {
+        if (!cancelled) setProjects(data);
+      })
+      .catch(() => {
+        if (!cancelled) setError("No se pudo cargar la lista de proyectos.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoaded(true);
+      });
+    return () => { cancelled = true; };
   }, []);
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -33,9 +78,10 @@ export default function Projects() {
     setCreating(true);
     try {
       const created = await api.createProject(nombre.trim(), descripcion.trim() || undefined);
-      setProjects([created, ...projects]);
+      setProjects([created as unknown as ProjectCard, ...projects]);
       setNombre("");
       setDescripcion("");
+      navigate(`/projects/${(created as { id: string }).id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error creando proyecto");
     } finally {
@@ -43,32 +89,29 @@ export default function Projects() {
     }
   };
 
-  const handleDeleteProject = async (projectId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setError(null);
-    if (!window.confirm("¿Estás seguro de que quieres eliminar este proyecto? Esta acción no se puede deshacer.")) {
-      return;
-    }
-    try {
-      await api.deleteProject(projectId);
-      setProjects(projects.filter(p => p.id !== projectId));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error eliminando proyecto");
-    }
-  };
+  const filtered = projects.filter((p) => {
+    const matchEstado = filtroEstado ? p.status === filtroEstado : true;
+    const matchEtapa = filtroEtapa ? p.current_stage === filtroEtapa : true;
+    const matchBusq = busqueda ? p.nombre.toLowerCase().includes(busqueda.toLowerCase()) : true;
+    return matchEstado && matchEtapa && matchBusq;
+  });
+
+  const estados = Array.from(new Set(projects.map((p) => p.status))).sort();
+  const etapas = Array.from(new Set(projects.map((p) => p.current_stage)))
+    .sort((a, b) => STAGE_ORDER.indexOf(a) - STAGE_ORDER.indexOf(b));
 
   return (
-    <section className="screen is-active" id="screen-project">
+    <section className="screen is-active" id="screen-projects">
       <div className="page-head">
         <div>
-          <span className="eyebrow">02 // Project Workspace</span>
+          <span className="eyebrow">Projects</span>
           <h1 className="h1">Projects</h1>
           <p style={{ color: "var(--ink-muted)", marginTop: 4 }}>
-            Manage your manga colorization projects.
+            Todos tus proyectos de colorización con su portada, etapa y estado.
           </p>
         </div>
-        <button type="button" className="btn btn-primary" onClick={() => navigate("/upload")}>
-          + Import Pages
+        <button type="button" className="btn-vermilion" onClick={handleCreate}>
+          + Nuevo proyecto
         </button>
       </div>
 
@@ -77,6 +120,41 @@ export default function Projects() {
           Error: {error}
         </p>
       )}
+
+      {/* Filtros y búsqueda */}
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 20 }}>
+        <input
+          type="text"
+          placeholder="Buscar por nombre…"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          style={{ padding: "8px 12px", fontSize: "0.82rem", border: "1px solid var(--border)", background: "var(--surface)", flex: 1, minWidth: 220 }}
+        />
+        <select
+          value={filtroEstado}
+          onChange={(e) => setFiltroEstado(e.target.value)}
+          style={{ padding: "8px 12px", fontSize: "0.82rem", border: "1px solid var(--border)", background: "var(--surface)" }}
+        >
+          <option value="">Todos los estados</option>
+          {estados.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </select>
+        <select
+          value={filtroEtapa}
+          onChange={(e) => setFiltroEtapa(e.target.value)}
+          style={{ padding: "8px 12px", fontSize: "0.82rem", border: "1px solid var(--border)", background: "var(--surface)" }}
+        >
+          <option value="">Todas las etapas</option>
+          {etapas.map((s) => (
+            <option key={s} value={s}>
+              {stageLabel(s)}
+            </option>
+          ))}
+        </select>
+      </div>
 
       <form onSubmit={handleCreate} style={{ marginBottom: 28, display: "flex", gap: 10, flexWrap: "wrap" }}>
         <input
@@ -101,59 +179,41 @@ export default function Projects() {
 
       {!loaded ? (
         <p style={{ color: "var(--ink-muted)" }}>Cargando proyectos…</p>
-      ) : projects.length === 0 ? (
-        <div className="panel-box" style={{ textAlign: "center", padding: "64px 24px" }}>
-          <span className="eyebrow">No Projects Yet</span>
+      ) : filtered.length === 0 ? (
+        <div className="panel-box" style={{ textAlign: "center", padding: "64px 24px", border: "1px solid var(--border)", borderRadius: 12, background: "var(--surface)" }}>
+          <span className="eyebrow">Sin proyectos</span>
           <h2 className="h1" style={{ marginBottom: 12 }}>
-            Create your first project above.
+            {projects.length === 0 ? "Crea tu primer proyecto" : "No coincide con los filtros"}
           </h2>
           <p style={{ color: "var(--ink-muted)", maxWidth: 440, margin: "0 auto 24px" }}>
-            Once created, import pages and begin the colorization workflow.
+            {projects.length === 0
+              ? "Una vez creado, importa páginas y comienza el flujo de colorización."
+              : "Ajusta los filtros o busca por nombre."}
           </p>
+          <button type="button" className="btn-vermilion" onClick={handleCreate}>
+            Crear proyecto
+          </button>
         </div>
       ) : (
-        <div className="grid-3" id="pagesGrid">
-          {projects.map((p) => (
-            <article key={p.id} className="project-card" onClick={() => {
-              setProjectId(p.id);
-              setAnalysisId(null);
-              setJobId(null);
-              navigate(`/upload?project=${p.id}`);
-            }}>
-              <div className="project-thumb">
-                <svg viewBox="0 0 300 400" preserveAspectRatio="xMidYMid slice">
-                  <rect width="300" height="400" fill="#fff" />
-                  <rect x="16" y="16" width="268" height="120" fill="#efece4" stroke="#111" strokeWidth="2" />
-                  <rect x="16" y="148" width="268" height="236" fill="#efece4" stroke="#111" strokeWidth="2" />
-                  <path d="M0 150 L70 95 L140 130 L230 80 L320 135 L320 200 L0 200 Z" fill="#111111" />
-                </svg>
-                <span className="exhibit-pill">
-                  <span className="on-ink">Original Ink</span>
-                  <span className="on-color">SUMI Color</span>
-                </span>
+        <div className="grid-3" style={{ marginBottom: 32 }}>
+          {filtered.map((p) => (
+            <article key={p.id} className="project-card" onClick={() => navigate(`/projects/${p.id}`)} style={{ cursor: "pointer", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden", background: "var(--surface)", transition: "box-shadow .2s" }}>
+              <div className="project-thumb" style={{ width: "100%", height: 200, overflow: "hidden", background: "var(--surface)" }}>
+                <img src={projectCover(p)} alt={`Portada de ${p.nombre}`} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <strong>{p.nombre}</strong>
-                <span className={badgeConfig.review.className}>{badgeConfig.review.text}</span>
-              </div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 0.7, color: "var(--ink-muted)" }}>
-                {p.descripcion || "Sin descripción"}
-              </div>
-              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                <button type="button" className="btn btn-outline btn-sm" onClick={(ev) => {
-                  ev.stopPropagation();
-                  setProjectId(p.id);
-                  setAnalysisId(null);
-                  setJobId(null);
-                  navigate(`/projects/${p.id}`);
-                }}>
-                  Abrir proyecto →
-                </button>
-                <button type="button" className="btn btn-outline btn-sm" style={{ color: "#c0392b", borderColor: "#c0392b" }} onClick={(ev) => {
-                  handleDeleteProject(p.id, ev);
-                }}>
-                  Delete
-                </button>
+              <div style={{ padding: 14 }}>
+                <strong style={{ display: "block", fontSize: 1 }}>{p.nombre}</strong>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", fontFamily: "var(--font-mono)", fontSize: 0.72, color: "var(--ink-muted)", marginTop: 6 }}>
+                  <span className={statusConf[p.status]?.className || "badge"} style={{ fontSize: 0.68 }}>{statusConf[p.status]?.text || p.status}</span>
+                  <span>{stageLabel(p.current_stage)}</span>
+                  <span>{p.progreso}%</span>
+                </div>
+                {p.descripcion && (
+                  <p style={{ fontSize: 0.78, color: "var(--ink-muted)", marginTop: 6, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{p.descripcion}</p>
+                )}
+                <div style={{ marginTop: 10, fontFamily: "var(--font-mono)", fontSize: 0.7, color: "var(--ink-muted)" }}>
+                  Actualizado {new Date(p.updated_at || p.created_at || "").toLocaleDateString()}
+                </div>
               </div>
             </article>
           ))}

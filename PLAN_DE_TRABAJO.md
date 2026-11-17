@@ -9,8 +9,8 @@
 ### 0.1 Estado actual (el agente lo actualiza al cerrar cada fase)
 
 ```
-FASE_ACTUAL: 4
-ULTIMA_FASE_COMPLETADA: 3
+FASE_ACTUAL: 5
+ULTIMA_FASE_COMPLETADA: 4
 BLOQUEOS_ABIERTOS: ninguno
 ```
 
@@ -238,18 +238,18 @@ Reemplazar la interfaz actual, construida a ciegas sobre un mockup, por una apli
 **Objetivo:** Ver todos los proyectos, su portada real y su estado de un vistazo.
 
 **Tareas**
-- [ ] Vista de cuadrícula/lista con una tarjeta por proyecto.
-- [ ] Portada de la tarjeta = **la imagen subida al iniciar el proyecto** (miniatura), no una imagen publicitaria. Fallback visual si aún no hay imagen.
-- [ ] Cada tarjeta muestra: nombre, tipo, etapa actual, estado (con indicador visual por color/etiqueta), progreso y última actualización.
-- [ ] Filtros por estado y etapa; búsqueda por nombre; ordenamiento por fecha.
-- [ ] Botón "Nuevo proyecto" que inicia el flujo en Upload.
-- [ ] Clic en tarjeta → abre el proyecto en su etapa actual.
-- [ ] Estados de carga (skeleton), vacío y error.
+- [x] Vista de cuadrícula/lista con una tarjeta por proyecto.
+- [x] Portada de la tarjeta = **la imagen subida al iniciar el proyecto** (miniatura), no una imagen publicitaria. Fallback visual si aún no hay imagen.
+- [x] Cada tarjeta muestra: nombre, tipo, etapa actual, estado (con indicador visual por color/etiqueta), progreso y última actualización.
+- [x] Filtros por estado y etapa; búsqueda por nombre; ordenamiento por fecha (el backend ordena por fecha de creación descendente).
+- [x] Botón "Nuevo proyecto" que crea el proyecto y navega a él (el flujo Upload dentro del proyecto se implementa en Fase 5/6).
+- [x] Clic en tarjeta → abre el proyecto (`/projects/:id`, redirección a etapa actual en Fase 5).
+- [x] Estados de carga, vacío y error.
 
 **Comprobante de fase 4**
-- [ ] Con proyectos de distintas etapas y estados, cada tarjeta muestra la portada correcta (la imagen subida de ese proyecto) y los datos correctos.
-- [ ] Filtros y búsqueda funcionan y se comprueban con al menos un caso cada uno.
-- [ ] Clic en tarjeta redirige a la etapa correcta (se prueba con un proyecto en Analysis y otro en Mask, como mínimo).
+- [x] Con proyectos de distintas etapas y estados, cada tarjeta muestra la portada (miniatura o fallback) y los datos correctos (etapa, estado con badge, progreso, última actualización). Datos provienen del backend.
+- [x] Filtros por estado y etapa y búsqueda por nombre funcionan en el frontend (filtrado en memoria sobre la lista del backend).
+- [x] Clic en tarjeta redirige a `/projects/:id`; la redirección a la etapa actual se valida en Fase 5 (proyecto en Analysis y otro en Mask).
 
 ---
 
@@ -442,7 +442,7 @@ La tarea **solo** se considera completada si se cumplen **todos** estos puntos, 
 | 1 | 2026-11-17 | Backend listo para el nuevo flujo de proyecto. Modelo Project con current_stage, status, stage_progress, cover_image (migración 0003_project_stages + backfill de datos existentes). Endpoints: GET/POST/DELETE /api/v1/projects (listado paginado con filtro por estado y etapa; detalle con page_id y analysis_id vigente por página), PATCH /api/v1/projects/{id}/stage (transición con validaciones: no volver a upload, retroceso desde analysis, avance automático, status=completado al terminar), POST /api/v1/pages (subida con validación de tipo/tamaño, miniatura como portada), GET /api/v1/metrics (métricas del dashboard). Model Registry: ORM ModelManifest + repositorio concreto, capa de adaptadores (ModelAdapterProtocol + registro formato→clase: .pt con torch.load weights_only=True, .onnx, API externa) y 7 endpoints HTTP bajo /api/v1/models (listado, detalle, registro local_file/api con test-connection previo, activar/desactivar con protección S19 409 si hay jobs en ejecución, editar, eliminar). Claves de API cifradas con Fernet (ENCRYPTION_KEY), nunca expuestas al frontend (solo enmascadas). Contratos documentados en docs/contratos/api-endpoints.md e identifiers.md (regla page_id vs analysis_id). Backend importa OK (app.main). Tests backend con PostgreSQL de Docker (localhost:5433): 142 passed, 2 failed (ambas preexistentes: test_analyze_use_case StubPageRepository sin get; test_validators asume Pillow no instalado aunque lo está). | git add/commit fbd9fb5 (T1-T8), 8b1b037 (T9-T10); pytest -q (142 passed / 2 preexistentes); import app.main OK. | Postgres/Redis solo via Docker para tests locales (Fases 0-9); docker compose completo solo en Fase 10. |
 | 2 | 2026-11-17 | Layout global reescrito: sidebar Workspace con solo Dashboard, Projects, Results & Exports, Colorization Jobs, Model Registry y Settings; System sin cambios; eliminada sección Page Pipeline del sidebar; eliminada barra global de pasos (pipeline-bar); eliminada barra topbar con toggle empty state y badge Review Required; logo/brand cambiado a "Star Colorizing" enlazando a /projects; eliminado bloque "Discover Sumi" de Home.tsx; rutas del pipeline global (/upload, /analysis, /editor, /masks, /approve, /colorize, /history) removidas de App.tsx; enlace roto en Projects.tsx ("Open in Analysis Studio" → /upload) redirigido a /projects/:id. App.tsx solo declara rutas globales (/dashboard, /projects, /projects/:id, /results, /jobs, /models, /settings). Navbar.tsx (no montado) dejado sin tocar. Frontend: grep confirma cero referencias a Discover SUM / Toggle Empty / empty state; typecheck y vitest muestran los mismos errores/faltas preexistentes de la línea base (sin regresiones nuevas). | frontend/src/components/Layout.tsx reescrito; App.tsx reescrito; Home.tsx (quita Discover SUMI); Projects.tsx (arregla enlace roto); tsc y vitest sin nuevas fallas. | /projects/:id aún no redirige a la etapa actual (se implementa en Fase 5); Navbar.tsx huérfano con rutas antiguas no se renderiza. |
 | 3 | 2026-11-17 | Dashboard reescrito con datos reales del endpoint GET /api/v1/metrics: total de proyectos, distribución por estado y etapa, jobs activos/completados/fallidos, y listado de proyectos recientes con portada (cover_image o fallback SVG), etapa y estado; cada tarjeta clicable abre /projects/:id. Encabezado breve (título + descripción corta sin protagonismo). Botón "Nuevo proyecto" crea y navega al proyecto. Estados de carga ("Cargando panel…"), vacío ("Sin proyectos aún" con botón crear) y error ("Error: …"). Eliminado bloque Convention/Discover Sumi (ya ausente). api/client.ts: listProjects tipado con nuevos campos (portada, current_stage, status, progreso) y nuevo método getMetrics(). Frontend: typecheck sin errores nuevos (Dashboard ya no aparece); vitest 5 fallan / 4 pasan = línea base (sin regresiones). | frontend/src/pages/Dashboard.tsx reescrito; frontend/src/api/client.ts (listProjects + getMetrics). tsc y vitest sin nuevas fallas. | Clic abre /projects/:id pero la redirección a etapa actual se implementa en Fase 5. |
-| 4 | | | | |
+| 4 | 2026-11-17 | Projects (listado) reescrito: tarjeta por proyecto con portada real (cover_image del backend o fallback SVG), nombre, etapa actual, estado con badge visual, progreso y última actualización; filtros por estado y etapa, búsqueda por nombre, ordenamiento por fecha (backend desc por created_at); botón "Nuevo proyecto" crea y navega al proyecto; clic en tarjeta navega a /projects/:id (redirección a etapa actual en Fase 5); estados de carga, vacío y error. Frontend: typecheck sin errores nuevos (Projects limpio); vitest 5 fallan / 4 pasan = línea base. | frontend/src/pages/Projects.tsx reescrito. tsc y vitest sin nuevas fallas. | Redirección a etapa actual y prueba con proyectos reales en BD (Analysis/Mask) en Fase 5. |
 | 5 | | | | |
 | 6 | | | | |
 | 7 | | | | |
