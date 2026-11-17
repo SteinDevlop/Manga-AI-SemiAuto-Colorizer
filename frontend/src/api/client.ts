@@ -42,10 +42,12 @@ async function request<T>(
 
 export const api = {
   get: <T>(path: string) => request<T>(`${API_BASE}${path}`),
-  post: <T>(path: string, body?: unknown) =>
+  post: <T>(path: string, body?: unknown, init?: RequestInit) =>
     request<T>(`${API_BASE}${path}`, {
       method: "POST",
-      body: body ? JSON.stringify(body) : undefined,
+      body: body instanceof FormData ? body : (body ? JSON.stringify(body) : undefined),
+      headers: body instanceof FormData ? {} : { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+      ...init,
     }),
   patch: <T>(path: string, body?: unknown) =>
     request<T>(`${API_BASE}${path}`, {

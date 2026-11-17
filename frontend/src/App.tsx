@@ -12,6 +12,7 @@ import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
 import Results from "./pages/Results";
+import ResultsList from "./pages/ResultsList";
 import Jobs from "./pages/Jobs";
 import Models from "./pages/Models";
 import Settings from "./pages/Settings";
@@ -52,7 +53,8 @@ export default function App() {
           <Route path="projects" element={<Projects />} />
           <Route path="projects/:id" element={<ProjectIndex />} />
           <Route path="projects/:id/:stage" element={<ProjectLayout />} />
-          <Route path="results" element={<Results />} />
+          <Route path="results" element={<ResultsList />} />
+          <Route path="results/:jobId" element={<Results />} />
           <Route path="jobs" element={<Jobs />} />
           <Route path="models" element={<Models />} />
           <Route path="settings" element={<Settings />} />
