@@ -1,3 +1,5 @@
+#otras cosas
+.atl/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -218,3 +220,40 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- ML / colorizacion local (SUMI) ---
+# Dataset original y derivados (inmutable, no subir a Git)
+model-creation/dataset/unified/pairs/
+model-creation/dataset/manifests/
+model-creation/dataset/splits/
+# Checkpoints, entrenamientos, predicciones, evaluaciones, resultados
+artifacts/checkpoints/
+artifacts/predictions/
+artifacts/evaluation/
+artifacts/results/
+docs/ml/environment-lock.txt
+# Entrenamiento en background (logs de stdout)
+artifacts/checkpoints/sumi_unet_cpu_v1/training_stdout.log
+
+# --- Dependencias e instalar en máquinas ajenas (no subir) ---
+frontend/node_modules/
+.env
+*.err
+*.log
+!docs/ml/environment-lock.txt
+
+# --- Datos generados por la aplicación (no subir) ---
+backend/data/
+data/
+docker/data/
+
+# --- Modelos y checkpoints pesados (no subir a Git) ---
+ml/
+model-creation/
+artifacts/checkpoints/
+
+# --- Scripts de arranque locales específicos de máquina (opcional) ---
+start_api.bat
+start_local.ps1
+start_worker.bat
+scripts/

@@ -3,24 +3,26 @@
 Creates a new project with a unique name and optional description.
 Depends on the project repository port, never on concrete ORM models.
 """
-
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Protocol
 
 from app.core.exceptions import ConflictError
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class ProjectRepository(Protocol):
     """Port for project persistence operations."""
 
-    async def exists_by_name(self, *, name: str) -> bool:  # pragma: no cover - protocol stub
+    async def exists_by_name(self, *, nombre: str) -> bool:  # pragma: no cover - protocol stub
         """Return True when a project with the given name already exists."""
         ...
 
     async def create(
-        self, *, name: str, description: str | None
+        self, *, nombre: str, description: str | None
     ) -> object:  # pragma: no cover - protocol stub
         """Create and persist a project, returning the persisted entity."""
         ...
@@ -59,20 +61,30 @@ class CreateProjectUseCase:
         Raises:
             ConflictError: when a project with the same name already exists.
         """
-        if await self._project_repository.exists_by_name(name=input_data.nombre):
-            raise ConflictError(
-                message="A project with this name already exists.",
-                details={"field": "nombre", "reason": "duplicate_name"},
+        try:
+            if await self._project_repository.exists_by_name(nombre=input_data.nombre):
+                logger.warning("Intento de crear proyecto duplicado: %s", input_data.nombre)
+                raise ConflictError(
+                    message="A project with this name already exists.",
+                    details={"field": "nombre", "reason": "duplicate_name"},
+                )
+
+            entity = await self._project_repository.create(
+                nombre=input_data.nombre,
+                descripcion=input_data.descripcion,
             )
 
-        entity = await self._project_repository.create(
-            name=input_data.nombre,
-            description=input_data.descripcion,
-        )
-
-        return ProjectOutput(
-            id=str(entity.id),
-            nombre=entity.nombre,
-            descripcion=entity.descripcion,
-            created_at=entity.created_at.isoformat(),
-        )
+            logger.info(
+                "Proyecto creado exitosamente: %s (%s)", entity.id, entity.nombre
+            )
+            return ProjectOutput(
+                id=str(entity.id),
+                nombre=entity.nombre,
+                descripcion=entity.descripcion,
+                created_at=entity.created_at.isoformat(),
+            )
+        except ConflictError:
+            raise
+        except Exception as exc:  # pragma: no cover - infra failure path
+            logger.exception("Error al crear proyecto '%s': %s", input_data.nombre, exc)
+            raise

@@ -20,13 +20,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # (psycopg2, etc.) y cliente de postgres para healthchecks si se requiere.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential libpq-dev curl ca-certificates \
+    && pip install --no-cache-dir psycopg2-binary \
     && rm -rf /var/lib/apt/lists/*
 
 # Dependencias Python del monolito (api + celery workers).
 # Gestionado por T1 mediante backend/pyproject.toml.
 COPY backend/pyproject.toml ./pyproject.toml
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -e .[dev]
+    pip install --no-cache-dir -e .[dev] && \
+    pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
 
 # Codigo del monolito (misma imagen para api, worker-cpu y worker-gpu base).
 COPY backend/ ./backend

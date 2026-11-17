@@ -23,9 +23,15 @@ def tmp_files():
     files = {}
 
     with tempfile.TemporaryDirectory() as tmp:
-        # PNG-like (magic bytes)
+        # PNG válido (1x1) generado con Pillow cuando está disponible, o
+        # magic bytes de PNG como fallback.
         png_path = Path(tmp) / "test.png"
-        png_path.write_bytes(b"\x89PNG\r\n\x1a\n" + b"rest of png")
+        try:
+            from PIL import Image as PilImage
+
+            PilImage.new("RGB", (1, 1), (255, 0, 0)).save(png_path, format="PNG")
+        except Exception:
+            png_path.write_bytes(b"\x89PNG\r\n\x1a\n" + b"rest of png")
 
         # JPEG-like
         jpg_path = Path(tmp) / "test.jpg"

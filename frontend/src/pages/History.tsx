@@ -1,6 +1,88 @@
-/* SUMI Results & Export — from studio.html mockup. */
+/* SUMI Results & Export — lista real de jobs de colorización conectada a la API. */
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { api, API_BASE } from "../api/client";
 
 export default function History() {
+  const navigate = useNavigate();
+  const [jobs, setJobs] = useState<Array<{
+    job_id: string;
+    analysis_id: string;
+    estado: string;
+    progreso: number;
+    mensaje: string | null;
+    ruta_resultado: string | null;
+    version_modelo: string | null;
+    created_at: string | null;
+    updated_at: string | null;
+  }>>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    api.listColorizations()
+      .then((data) => {
+        setJobs(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err.message || "Failed to load jobs.");
+        setLoading(false);
+      });
+  }, []);
+
+  const viewResult = (jobId: string, resultUrl: string | null) => {
+    if (resultUrl) {
+      navigate(`/results/${jobId}`);
+    } else {
+      setError("No result available for this job yet.");
+    }
+  };
+
+  const statusBadge = (estado: string) => {
+    switch (estado) {
+      case "completed":
+        return <span className="badge badge-done">Completed</span>;
+      case "failed":
+        return <span className="badge badge-failed">Failed</span>;
+      case "pending":
+      case "preprocessing":
+      case "colorizing":
+      case "refining":
+        return <span className="badge badge-running">{estado}</span>;
+      default:
+        return <span>{estado}</span>;
+    }
+  };
+
+  if (loading) {
+    return (
+      <section className="screen is-active" id="screen-results">
+        <div className="page-head">
+          <div>
+            <span className="eyebrow">08 // Final Output</span>
+            <h1 className="h1">Results &amp; <em>Export</em></h1>
+          </div>
+        </div>
+        <p style={{ color: "var(--ink-muted)" }}>Loading jobs…</p>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="screen is-active" id="screen-results">
+        <div className="page-head">
+          <div>
+            <span className="eyebrow">08 // Final Output</span>
+            <h1 className="h1">Results &amp; <em>Export</em></h1>
+          </div>
+        </div>
+        <p style={{ color: "#c0392b" }}>{error}</p>
+      </section>
+    );
+  }
+
   return (
     <section className="screen is-active" id="screen-results">
       <div className="page-head">
@@ -8,56 +90,65 @@ export default function History() {
           <span className="eyebrow">08 // Final Output</span>
           <h1 className="h1">Results &amp; <em>Export</em></h1>
         </div>
-        <button type="button" className="btn btn-vermilion" onClick={() => {}}>
-          Download Colorized Image
-        </button>
       </div>
 
-      <div className="grid-2" style={{ gridTemplateColumns: "1fr 320px" }}>
-        <div className="panel-box">
-          <div className="compare-stage" id="resultCompareStage" style={{ "--split": "50%" } as React.CSSProperties}>
-            <div className="comp-layer comp-bw">
-              <svg viewBox="0 0 600 450" preserveAspectRatio="xMidYMid slice" id="resultTemplate">
-                <defs>
-                  <linearGradient id="resSky" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#19284f" />
-                    <stop offset="60%" stopColor="#315bea" />
-                    <stop offset="100%" stopColor="#f2c94c" />
-                  </linearGradient>
-                </defs>
-                <rect width="600" height="450" fill="url(#resSky)" />
-                <path d="M0 320 L140 210 L290 280 L450 185 L600 265 L600 450 L0 450 Z" fill="#1b2440" stroke="#111" strokeWidth="2" />
-                <path d="M235 450 L255 280 Q290 250 325 280 L345 450 Z" fill="#1e2d4d" stroke="#111" strokeWidth="2.4" />
-                <path d="M262 285 Q195 268 145 292 Q190 310 260 304 Z" fill="#f04438" stroke="#111" strokeWidth="2" />
-                <circle cx="290" cy="240" r="24" fill="#fae2d6" stroke="#111" strokeWidth="2" />
-              </svg>
-            </div>
-            <div className="comp-layer comp-color" id="resultColorLayer" />
-            <div className="comp-divider" id="resultDivider">
-              <div className="comp-handle">⇄</div>
-            </div>
-          </div>
+      {jobs.length === 0 && (
+        <div className="panel-box" style={{ textAlign: "center", padding: "64px 24px" }}>
+          <span className="eyebrow">No Results Yet</span>
+          <h2 className="h1" style={{ marginBottom: 12 }}>No colorization jobs found.</h2>
+          <p style={{ color: "var(--ink-muted)", maxWidth: 440, margin: "0 auto 24px" }}>
+            Upload a manga page, run analysis, approve it, and start colorization to see results here.
+          </p>
+          <button type="button" className="btn btn-vermilion" onClick={() => navigate("/upload")}>
+            Upload a Page
+          </button>
         </div>
+      )}
 
-        <div className="panel-box">
-          <span className="eyebrow">Artifact Metadata</span>
-          <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10, fontSize: 0.84 }}>
-            <div>
-              <strong>Job ID:</strong>{" "}
-              <span className="mono-label">job_9f2a1c</span>
-            </div>
-            <div>
-              <strong>Dimensions:</strong> 2480 × 3508 px
-            </div>
-            <div>
-              <strong>Project:</strong> Tokyo Dusk — Ch. 09
-            </div>
-            <div>
-              <strong>Adapter:</strong> SUMI Mock Engine v1
-            </div>
-          </div>
-        </div>
-      </div>
+      {jobs.length > 0 && (
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Job ID</th>
+              <th>Status</th>
+              <th>Progress</th>
+              <th>Model</th>
+              <th>Result</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            {jobs.map((job) => (
+              <tr key={job.job_id}>
+                <td style={{ fontFamily: "var(--font-mono)", fontSize: 0.85 }}>
+                  {job.job_id.slice(0, 8)}…
+                </td>
+                <td>{statusBadge(job.estado)}</td>
+                <td>{job.progreso}%</td>
+                <td>{job.version_modelo ?? "—"}</td>
+                <td>
+                  {job.estado === "completed" && job.ruta_resultado ? (
+                    <button
+                      type="button"
+                      className="btn btn-vermilion btn-sm"
+                      onClick={() => viewResult(job.job_id, job.ruta_resultado)}
+                    >
+                      View Result
+                    </button>
+                  ) : (
+                    <span style={{ color: "var(--ink-muted)", fontSize: 0.85 }}>
+                      {job.estado === "failed" ? "Failed" : "Pending"}
+                    </span>
+                  )}
+                </td>
+                <td style={{ fontSize: 0.85, color: "var(--ink-muted)" }}>
+                  {job.created_at ? new Date(job.created_at).toLocaleString() : "—"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </section>
   );
 }

@@ -7,7 +7,6 @@ returns a DTO with the artifact id and metadata.
 Depends on repository and validator ports, never on concrete ORM models or AI
 implementations.
 """
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -15,6 +14,9 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from app.core.exceptions import ConflictError
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class ArtifactRepository(Protocol):
@@ -139,49 +141,65 @@ class UploadFileUseCase:
             ValidationError: when any validation rule fails.
             ConflictError: when the file hash is already registered.
         """
-        path = Path(input_data.source_path)
+        try:
+            path = Path(input_data.source_path)
 
-        await self._file_validator.validate_mime_type(
-            path=path, artifact_type=input_data.artifact_type
-        )
-        await self._file_validator.validate_size(path=path, artifact_type=input_data.artifact_type)
-        await self._file_validator.validate_content(path=path)
-        await self._file_validator.validate_dimensions(
-            path=path, artifact_type=input_data.artifact_type
-        )
-
-        saved = self._storage_service.save(
-            source_path=path,
-            artifact_type=input_data.artifact_type,
-            original_name=input_data.original_name,
-        )
-
-        hash_sha256 = saved["hash_sha256"]
-        if await self._artifact_repository.exists_by_hash(hash_sha256=hash_sha256):
-            raise ConflictError(
-                message="An artifact with this hash already exists.",
-                details={"field": "hash_sha256", "reason": "duplicate_hash"},
+            await self._file_validator.validate_mime_type(
+                path=path, artifact_type=input_data.artifact_type
+            )
+            await self._file_validator.validate_size(path=path, artifact_type=input_data.artifact_type)
+            await self._file_validator.validate_content(path=path)
+            await self._file_validator.validate_dimensions(
+                path=path, artifact_type=input_data.artifact_type
             )
 
-        entity = await self._artifact_repository.create(
-            artifact_type=input_data.artifact_type,
-            hash_sha256=hash_sha256,
-            ruta_archivo=saved["ruta_archivo"],
-            nombre_original=saved["nombre_original"],
-            mime_type=None,
-            tamano_bytes=saved["tamano_bytes"],
-            ancho=None,
-            alto=None,
-        )
+            saved = self._storage_service.save(
+                source_path=path,
+                artifact_type=input_data.artifact_type,
+                original_name=input_data.original_name,
+            )
 
-        return ArtifactOutput(
-            artifact_id=str(entity.id),
-            tipo=input_data.artifact_type,
-            ruta_archivo=saved["ruta_archivo"],
-            hash_sha256=hash_sha256,
-            tamano_bytes=saved["tamano_bytes"],
-            nombre_original=saved["nombre_original"],
-            mime_type=None,
-            ancho=None,
-            alto=None,
-        )
+            hash_sha256 = saved["hash_sha256"]
+            if await self._artifact_repository.exists_by_hash(hash_sha256=hash_sha256):
+                raise ConflictError(
+                    message="An artifact with this hash already exists.",
+                    details={"field": "hash_sha256", "reason": "duplicate_hash"},
+                )
+
+            entity = await self._artifact_repository.create(
+                artifact_type=input_data.artifact_type,
+                hash_sha256=hash_sha256,
+                ruta_archivo=saved["ruta_archivo"],
+                nombre_original=saved["nombre_original"],
+                mime_type=None,
+                tamano_bytes=saved["tamano_bytes"],
+                ancho=None,
+                alto=None,
+            )
+
+            logger.info(
+                "Archivo subido exitosamente: %s (tipo: %s, tamaño: %d bytes)",
+                entity.id,
+                input_data.artifact_type,
+                saved["tamano_bytes"],
+            )
+            return ArtifactOutput(
+                artifact_id=str(entity.id),
+                tipo=input_data.artifact_type,
+                ruta_archivo=saved["ruta_archivo"],
+                hash_sha256=hash_sha256,
+                tamano_bytes=saved["tamano_bytes"],
+                nombre_original=saved["nombre_original"],
+                mime_type=None,
+                ancho=None,
+                alto=None,
+            )
+        except ConflictError:
+            raise
+        except Exception as exc:  # pragma: no cover - infra failure path
+            logger.exception(
+                "Error al subir archivo %s: %s",
+                input_data.source_path,
+                exc,
+            )
+            raise

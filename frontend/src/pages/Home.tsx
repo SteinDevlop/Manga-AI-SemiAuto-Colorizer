@@ -100,9 +100,6 @@ export default function Home() {
                   <path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
-              <a href="#comparison" className="btn-outline">
-                Discover SUMI
-              </a>
             </div>
 
             <div className="hero-annotations">
