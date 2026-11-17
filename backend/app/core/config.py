@@ -26,9 +26,13 @@ class Settings(BaseSettings):
     # Almacenamiento local
     STORAGE_ROOT: str = "./data"
 
+    # Subida de archivos
+    MAX_UPLOAD_BYTES: int = 50 * 1024 * 1024  # 50 MB por defecto
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+        extra = "ignore"
 
 
 @lru_cache
