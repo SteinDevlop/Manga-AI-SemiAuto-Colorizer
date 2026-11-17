@@ -53,7 +53,7 @@ const projectCover = (p: string | null) => {
   return "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='260'><rect width='200' height='260' fill='%23efece4'/><rect x='12' y='12' width='176' height='104' fill='%23fff' stroke='%23111' stroke-width='2'/><rect x='12' y='128' width='176' height='120' fill='%23fff' stroke='%23111' stroke-width='2'/></svg>";
 };
 
-type ProjectDetail = {
+export type ProjectDetail = {
   id: string;
   nombre: string;
   descripcion: string | null;

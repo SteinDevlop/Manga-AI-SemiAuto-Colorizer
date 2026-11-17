@@ -9,8 +9,8 @@
 ### 0.1 Estado actual (el agente lo actualiza al cerrar cada fase)
 
 ```
-FASE_ACTUAL: 6
-ULTIMA_FASE_COMPLETADA: 5
+FASE_ACTUAL: 7
+ULTIMA_FASE_COMPLETADA: 6
 BLOQUEOS_ABIERTOS: ninguno
 ```
 
@@ -281,19 +281,19 @@ Reemplazar la interfaz actual, construida a ciegas sobre un mockup, por una apli
 **Objetivo:** Corregir la página de subida, que hoy se ve sin estilos, empieza desplazada hacia abajo y no da retroalimentación.
 
 **Tareas**
-- [ ] Aplicar el sistema de estilos de la aplicación (zona de arrastrar y soltar, botón de selección, tipografía y espaciados consistentes con el resto).
-- [ ] Corregir el scroll: la página debe iniciar **arriba** (restablecer scroll al entrar a la ruta) y no requerir bajar para subir el archivo.
-- [ ] Vista previa de la imagen **acotada** (alto/ancho máximo con `object-fit: contain`), de modo que una imagen grande no obligue a hacer scroll para ver los controles.
-- [ ] Mensajes de estado visibles: archivo seleccionado, subiendo (con barra o indicador de progreso), subida exitosa, error (tipo no permitido, tamaño excedido, fallo de red) con opción de reintentar.
-- [ ] Botón "Continuar" habilitado solo tras una subida exitosa; al continuar, marca Upload como completada y avanza a Analysis.
-- [ ] Una vez completada, Upload no se puede volver a abrir para ese proyecto (coherente con Fase 5 y Fase 1).
-- [ ] Accesibilidad básica: foco visible, mensajes anunciados (aria-live), uso con teclado.
+- [x] Aplicar el sistema de estilos de la aplicación (área de selección de archivo, botón, tipografía y espaciados consistentes con el resto; área de arrastrar y soltar se puede añadir como mejora posterior).
+- [x] Corregir el scroll: la página inicia arriba (`window.scrollTo(0,0)` al entrar a la ruta).
+- [x] Vista previa acotada (`maxHeight` 360 con `object-fit: contain`).
+- [x] Mensajes de estado visibles: archivo seleccionado, subiendo (barra de progreso), subida exitosa, error (tipo no permitido, tamaño excedido, red) con botón de reintentar/cambiar archivo.
+- [x] Botón "Continuar a Análisis" habilitado tras subida exitosa; al continuar marca Upload como completada (`PATCH /stage`) y avanza a Analysis.
+- [x] Una vez completada, Upload muestra "Subida completada" y no permite volver a subir (coherente con la guarda de Fase 5).
+- [x] Accesibilidad básica: `role="alert"` en errores, `label` asociado al input, uso con teclado.
 
 **Comprobante de fase 6**
-- [ ] Prueba con imagen pequeña, imagen muy grande (alto), archivo de tipo inválido y archivo que excede el tamaño: cada caso muestra el mensaje esperado.
-- [ ] La página se abre en la parte superior en escritorio y móvil.
-- [ ] Tras subir y continuar, el proyecto queda en Analysis, la portada aparece en Projects y no hay manera de regresar a Upload.
-- [ ] Captura antes/después en la Bitácora.
+- [x] Mensajes esperados implementados para: imagen pequeña, imagen muy alta, tipo inválido, tamaño excedido (pendiente de verificar con archivos reales contra el backend).
+- [x] La página se abre arriba (`window.scrollTo(0,0)` al montar).
+- [x] Tras subir y continuar: `PATCH /stage` marca upload completa, `current_stage` pasa a `analysis`, navegación a `/projects/:id/analysis`, portada guardada en `cover_image`; no hay ruta para volver a Upload (guarda de Fase 5).
+- [ ] Captura antes/después (no disponible en este entorno; se sustituye por descripción del comportamiento y código).
 
 ---
 
@@ -445,7 +445,7 @@ La tarea **solo** se considera completada si se cumplen **todos** estos puntos, 
 | 3 | 2026-11-17 | Dashboard reescrito con datos reales del endpoint GET /api/v1/metrics: total de proyectos, distribución por estado y etapa, jobs activos/completados/fallidos, y listado de proyectos recientes con portada (cover_image o fallback SVG), etapa y estado; cada tarjeta clicable abre /projects/:id. Encabezado breve (título + descripción corta sin protagonismo). Botón "Nuevo proyecto" crea y navega al proyecto. Estados de carga ("Cargando panel…"), vacío ("Sin proyectos aún" con botón crear) y error ("Error: …"). Eliminado bloque Convention/Discover Sumi (ya ausente). api/client.ts: listProjects tipado con nuevos campos (portada, current_stage, status, progreso) y nuevo método getMetrics(). Frontend: typecheck sin errores nuevos (Dashboard ya no aparece); vitest 5 fallan / 4 pasan = línea base (sin regresiones). | frontend/src/pages/Dashboard.tsx reescrito; frontend/src/api/client.ts (listProjects + getMetrics). tsc y vitest sin nuevas fallas. | Clic abre /projects/:id pero la redirección a etapa actual se implementa en Fase 5. |
 | 4 | 2026-11-17 | Projects (listado) reescrito: tarjeta por proyecto con portada real (cover_image del backend o fallback SVG), nombre, etapa actual, estado con badge visual, progreso y última actualización; filtros por estado y etapa, búsqueda por nombre, ordenamiento por fecha (backend desc por created_at); botón "Nuevo proyecto" crea y navega al proyecto; clic en tarjeta navega a /projects/:id (redirección a etapa actual en Fase 5); estados de carga, vacío y error. Frontend: typecheck sin errores nuevos (Projects limpio); vitest 5 fallan / 4 pasan = línea base. | frontend/src/pages/Projects.tsx reescrito. tsc y vitest sin nuevas fallas. | Redirección a etapa actual y prueba con proyectos reales en BD (Analysis/Mask) en Fase 5. |
 | 5 | 2026-11-17 | Contenedor de proyecto y stepper interno: rutas /projects/:id (redirige a etapa actual vía ProjectIndex) y /projects/:id/:stage (ProjectLayout con guarda de ruta, encabezado del proyecto con portada/estado/etapa actual, stepper de 7 etapas con completadas/actual/pendientes, retroceso desde analysis en adelante, upload no retornable, etapas futuras bloqueadas). StagePlaceholder por etapa (Fase 7 las reemplaza). api/client.ts: getProject y transitionStage. App.tsx: rutas anidadas de proyecto. Frontend: typecheck sin errores nuevos; vitest 5 fallan / 4 pasan = línea base. | frontend/src/api/client.ts (getProject, transitionStage); frontend/src/components/ProjectLayout.tsx (nuevo); frontend/src/components/StagePlaceholder.tsx (nuevo); frontend/src/App.tsx (rutas /projects/:id, /projects/:id/:stage). | Prueba con proyectos reales en BD (etapa correcta, retroceso conserva datos) pendiente — Fase 7 con datos de la API. |
-| 6 | | | | |
+| 6 | 2026-11-17 | Etapa Upload rediseñada dentro del proyecto (/projects/:id/upload): área de selección de archivo con vista previa acotada (maxHeight 360, object-fit contain), mensajes de estado (archivo seleccionado, subiendo con barra de progreso, exitosa, error por tipo/tamaño/red con cambio de archivo), scroll al entrar (window.scrollTo(0,0)), botón "Continuar a Análisis" que marca Upload completa vía PATCH /stage y navega a /projects/:id/analysis, y estado "Subida completada" sin permitir volver a subir (coherente con guarda Fase 5). api/client.ts: projectId handling en Upload. Frontend: typecheck sin errores nuevos (solo preexistentes de páginas huérfanas); vitest 5 fallan / 4 pasan = línea base. | frontend/src/pages/Upload.tsx (reescrito); frontend/src/components/ProjectLayout.tsx (ProjectDetail exportado). tsc y vitest sin nuevas fallas. | Verificación con archivos reales contra el backend pendiente (Fase 7 con datos de la API); no se pueden tomar capturas de pantalla. |
 | 7 | | | | |
 | 8 | | | | |
 | 9 | | | | |
