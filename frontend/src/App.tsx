@@ -5,7 +5,8 @@
  * /projects/:id/:stage renderiza el contenedor de proyecto con stepper
  * interno). El pipeline de cada proyecto vive dentro de estas rutas.
  */
-import { BrowserRouter, Routes, Route, useParams, useNavigate, useState } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { Layout } from "./components/Layout";
 import { ProjectLayout } from "./components/ProjectLayout";
 import Home from "./pages/Home";
