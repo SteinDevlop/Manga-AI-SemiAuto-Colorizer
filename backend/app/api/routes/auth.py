@@ -10,7 +10,7 @@ from __future__ import annotations
 import time
 from collections import defaultdict, deque
 
-from app.api.deps import get_current_user
+from app.api.deps import get_session_dep, login_form_dep
 from app.core.config import get_settings
 from app.core.logging import get_logger
 from app.core.security import (
@@ -19,10 +19,9 @@ from app.core.security import (
     verify_password,
     verify_password_dummy,
 )
-from app.infrastructure.database.session import get_session
 from app.modules.users.models import User
 from app.modules.users.repositories import UserRepository, normalize_email
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -90,8 +89,8 @@ def reset_throttle() -> None:
 @router.post("/token", response_model=TokenResponse)
 async def login(
     request: Request,
-    form: OAuth2PasswordRequestForm = Depends(),
-    session: AsyncSession = Depends(get_session),
+    form: OAuth2PasswordRequestForm = login_form_dep,
+    session: AsyncSession = get_session_dep,
 ) -> TokenResponse:
     """Intercambia usuario/contraseña por un token de acceso (OAuth2 password flow)."""
     key = _throttle_key(request, form.username)
@@ -123,7 +122,7 @@ async def login(
 
 
 @router.get("/me", response_model=UserResponse)
-async def me(user: User = Depends(get_current_user)) -> UserResponse:
+async def me(user: User = get_current_user_dep) -> UserResponse:
     """Devuelve el usuario autenticado (el frontend lo usa para validar la sesión)."""
     return UserResponse(id=str(user.id), email=user.email, is_admin=user.is_admin)
 
@@ -131,8 +130,8 @@ async def me(user: User = Depends(get_current_user)) -> UserResponse:
 @router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
 async def change_password(
     body: ChangePasswordRequest,
-    user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_session),
+    user: User = get_current_user_dep,
+    session: AsyncSession = get_session_dep,
 ) -> None:
     if not verify_password(body.current_password, user.hashed_password):
         raise HTTPException(

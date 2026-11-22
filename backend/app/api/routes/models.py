@@ -21,7 +21,7 @@ from typing import Any
 from uuid import UUID
 
 from app.ai_engine.adapters.modelos import resolve_adapter
-from app.api.deps import get_current_admin
+from app.api.deps import get_current_admin, get_session_dep
 from app.application.use_cases.get_model import GetModelInput, GetModelUseCase
 from app.application.use_cases.list_models import ListModelsInput, ListModelsUseCase
 from app.application.use_cases.register_model import RegisterModelInput, RegisterModelUseCase
@@ -32,10 +32,9 @@ from app.application.use_cases.update_model_status import (
 from app.core.config import get_fernet, get_settings
 from app.core.exceptions import AppError, ConflictError, NotFoundError, ValidationError
 from app.core.logging import get_logger
-from app.infrastructure.database.session import get_session
 from app.infrastructure.storage.service import StorageService
 from app.modules.model_registry.repositories import ModelManifestRepository
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Form, HTTPException, Query, UploadFile, status
 from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -140,7 +139,7 @@ async def _verificar_adaptador_archivo(*, formato: str, ruta_archivo: str, model
 
 @router.get("", response_model=dict[str, Any])
 async def list_models(
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession = get_session_dep,
     tarea: str | None = Query(None, description="Filtrar por tarea (familia)"),
     activo: bool | None = Query(None, description="Filtrar solo activos o inactivos"),
     formato: str | None = Query(None, description="Filtrar por formato"),
@@ -181,7 +180,7 @@ async def list_models(
 @router.get("/{model_id}", response_model=dict[str, Any])
 async def get_model(
     model_id: str,
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession = get_session_dep,
 ) -> dict[str, Any]:
     """Devuelve el detalle de un modelo por su ID."""
     try:
@@ -237,7 +236,7 @@ async def get_model(
     dependencies=[Depends(get_current_admin)],
 )
 async def register_model(
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession = get_session_dep,
     source_type: str = Form(...),
     nombre: str = Form(...),
     familia: str = Form(...),
@@ -245,7 +244,7 @@ async def register_model(
     descripcion: str | None = Form(None),
     licencia: str | None = Form(None),
     # --- solo local_file ---
-    file: UploadFile | None = File(None),
+    file: UploadFile | None = file_none_dep,
     # --- solo api ---
     api_key: str | None = Form(None),
     auth_method: str = Form("bearer"),
@@ -415,7 +414,7 @@ async def register_model(
 )
 async def update_model_status(
     model_id: str,
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession = get_session_dep,
     estado: str = Form(..., description="disponible o deshabilitado"),
 ) -> dict[str, Any]:
     """Activa o desactiva un modelo (S18). Protege modelos en uso (S19)."""
@@ -472,7 +471,7 @@ async def update_model_status(
 @router.put("/{model_id}", response_model=dict[str, Any], dependencies=[Depends(get_current_admin)])
 async def update_model(
     model_id: str,
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession = get_session_dep,
     nombre: str | None = Form(None),
     descripcion: str | None = Form(None),
     # credenciales (solo api)
@@ -552,7 +551,7 @@ async def update_model(
 @router.delete("/{model_id}", dependencies=[Depends(get_current_admin)])
 async def delete_model(
     model_id: str,
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession = get_session_dep,
 ) -> Response:
     """Elimina un modelo. Protege modelos en uso (S19)."""
     repo = ModelManifestRepository(session)
@@ -592,7 +591,7 @@ async def delete_model(
 )
 async def test_connection(
     model_id: str,
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession = get_session_dep,
 ) -> dict[str, Any]:
     """Prueba de conexión para modelos API (S16)."""
     repo = ModelManifestRepository(session)

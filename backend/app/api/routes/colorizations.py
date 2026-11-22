@@ -12,14 +12,14 @@ import asyncio
 from typing import Any
 from uuid import UUID
 
+from app.api.deps import get_session_dep
 from app.core.exceptions import AppError
 from app.core.logging import get_logger
-from app.infrastructure.database.session import get_session
 from app.modules.colorization.repositories import ColorizationJobRepository
 from app.modules.model_registry.repositories import ModelManifestRepository
 from app.modules.page_analysis.models import Analysis
 from app.workers.celery_app import celery_app
-from fastapi import APIRouter, Depends, HTTPException, Path, status
+from fastapi import APIRouter, HTTPException, Path, status
 from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -33,7 +33,7 @@ router = APIRouter(prefix="/api/v1/colorizations", tags=["colorizations"])
 async def create_colorization(
     analysis_id: UUID,
     model_id: UUID | None = None,
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession = get_session_dep,
 ) -> dict[str, Any]:
     """Create a colorization job for an approved analysis and enqueue inference.
 
@@ -188,7 +188,7 @@ async def create_colorization(
 
 @router.get("")
 async def list_colorizations(
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession = get_session_dep,
 ) -> list[dict[str, Any]]:
     """List all colorization jobs."""
     logger.info("Listando trabajos de colorización")
@@ -222,7 +222,7 @@ async def list_colorizations(
 @router.get("/{job_id}")
 async def get_colorization(
     job_id: str = Path(..., description="Colorization job identifier"),
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession = get_session_dep,
 ) -> dict[str, Any]:
     """Fetch the status and result of a colorization job."""
     logger.info("Consultando trabajo de colorización: %s", job_id)
@@ -262,7 +262,7 @@ async def get_colorization(
 @router.get("/{job_id}/result")
 async def get_colorization_result(
     job_id: str = Path(..., description="Colorization job identifier"),
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession = get_session_dep,
 ):
     """Serve the colorized result image for a completed job."""
     logger.info("Solicitando resultado de colorización: %s", job_id)

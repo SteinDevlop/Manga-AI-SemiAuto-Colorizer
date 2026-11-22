@@ -10,20 +10,19 @@ from __future__ import annotations
 from typing import Any, List, Optional
 from uuid import UUID
 
-from app.api.deps import get_current_admin
+from app.api.deps import get_current_admin, get_session_dep
 from app.application.use_cases.create_project import (
     CreateProjectInput,
     CreateProjectUseCase,
 )
 from app.core.exceptions import AppError
 from app.core.logging import get_logger
-from app.infrastructure.database.session import get_session
 from app.infrastructure.storage.service import public_preview_url
 from app.modules.page_analysis.models import Analysis
 from app.modules.page_analysis.repositories import PageRepository
 from app.modules.projects.models import Project
 from app.modules.projects.repositories import ProjectRepository
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -43,7 +42,7 @@ def _progress_percentage(stage_progress: Optional[list]) -> int:
 
 @router.get("", response_model=List[dict[str, Any]])
 async def list_projects(
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession = get_session_dep,
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     estado: Optional[str] = Query(None, description="Filter by project status"),
@@ -96,7 +95,7 @@ async def list_projects(
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=dict[str, Any])
 async def create_project(
     payload: dict[str, Any],
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession = get_session_dep,
 ) -> dict[str, Any]:
     """Create a new project with a unique name."""
     logger.info("Creando nuevo proyecto")
@@ -143,7 +142,7 @@ async def create_project(
 @router.get("/{project_id}", response_model=dict[str, Any])
 async def get_project(
     project_id: str,
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession = get_session_dep,
 ) -> dict[str, Any]:
     """Get a project with its pages, current stage and the active analysis id."""
     logger.info("Obteniendo proyecto: %s", project_id)
@@ -217,7 +216,7 @@ async def get_project(
 )
 async def delete_project(
     project_id: str,
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession = get_session_dep,
 ) -> None:
     """Delete a project by its ID. Requires admin privileges."""
     logger.info("Eliminando proyecto: %s", project_id)
@@ -247,7 +246,7 @@ async def delete_project(
 async def transition_stage(
     project_id: str,
     payload: dict[str, Any],
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession = get_session_dep,
 ) -> dict[str, Any]:
     """Transition the current stage of a project with validation rules.
 

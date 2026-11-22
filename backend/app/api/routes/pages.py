@@ -13,15 +13,15 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID
 
+from app.api.deps import file_dep, get_session_dep
 from app.application.use_cases.create_page import CreatePageInput, CreatePageUseCase
 from app.core.config import get_settings
 from app.core.exceptions import AppError, ForbiddenError, NotFoundError
 from app.core.logging import get_logger
-from app.infrastructure.database.session import get_session
 from app.infrastructure.storage.service import StorageService
 from app.modules.page_analysis.repositories import PageRepository
 from app.modules.projects.repositories import ProjectRepository
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Form, HTTPException, UploadFile, status
 from fastapi import Path as PathParam
 from fastapi.responses import FileResponse
 from PIL import Image
@@ -38,8 +38,8 @@ MAX_THUMB_SIZE = (400, 400)
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def upload_page(
     project_id: str = Form(...),
-    file: UploadFile = File(...),
-    session: AsyncSession = Depends(get_session),
+    file: UploadFile = file_dep,
+    session: AsyncSession = get_session_dep,
 ) -> dict[str, Any]:
     """Upload a monochrome manga page and register it under a project.
 
@@ -224,7 +224,7 @@ async def upload_page(
 @router.get("/{project_id}")
 async def list_pages(
     project_id: str = PathParam(..., description="Project identifier"),
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession = get_session_dep,
 ) -> list[dict[str, Any]]:
     """List all pages of a project."""
     try:
@@ -269,7 +269,7 @@ async def list_pages(
 @router.get("/{page_id}/content")
 async def get_page_content(
     page_id: UUID,
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession = get_session_dep,
 ) -> FileResponse:
     """Serve the original page image to authenticated clients for character previews."""
     page = await PageRepository(session).get(page_id)

@@ -14,12 +14,12 @@ from uuid import UUID
 from app.ai_engine.adapters.mock.character_detector import MockCharacterDetector
 from app.ai_engine.adapters.mock.panel_detector import MockPanelDetector
 from app.ai_engine.adapters.mock.segmenter import MockSegmenter
+from app.api.deps import get_session_dep
 from app.application.use_cases.analyze_page import AnalyzePageUseCase
 from app.application.use_cases.approve_analysis import ApproveAnalysisInput, ApproveAnalysisUseCase
 from app.application.use_cases.get_analysis import GetAnalysisUseCase
 from app.core.exceptions import AppError, NotFoundError
 from app.core.logging import get_logger
-from app.infrastructure.database.session import get_session
 from app.infrastructure.storage.service import StorageService
 from app.modules.character_analysis.repositories import (
     CharacterAppearanceRepository,
@@ -31,7 +31,7 @@ from app.modules.page_analysis.repositories import (
     PageRepository,
     PanelRepository,
 )
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 from fastapi import Path as PathParam
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -43,7 +43,7 @@ router = APIRouter(prefix="/api/v1/analysis", tags=["analysis"])
 @router.post("/{page_id}", status_code=status.HTTP_200_OK)
 async def analyze_page(
     page_id: str = PathParam(..., description="Page identifier"),
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession = get_session_dep,
 ) -> dict[str, Any]:
     """Run panel, character and mask analysis on a page.
 
@@ -156,7 +156,7 @@ async def analyze_page(
 @router.get("/{analysis_id}")
 async def get_analysis(
     analysis_id: str = PathParam(..., description="Analysis identifier"),
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession = get_session_dep,
 ) -> dict[str, Any]:
     """Get an analysis result with panels, characters, appearances and masks."""
     logger.info("Obteniendo análisis: %s", analysis_id)
@@ -245,7 +245,7 @@ async def get_analysis(
 @router.post("/{analysis_id}/approve", status_code=status.HTTP_200_OK)
 async def approve_analysis(
     analysis_id: str = PathParam(..., description="Analysis identifier"),
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession = get_session_dep,
 ) -> dict[str, Any]:
     """Approve a page analysis so a colorization job can be created.
 

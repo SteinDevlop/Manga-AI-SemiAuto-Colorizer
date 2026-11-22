@@ -8,13 +8,13 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
+from app.api.deps import get_session_dep
 from app.core.exceptions import AppError
 from app.core.logging import get_logger
-from app.infrastructure.database.session import get_session
 from app.infrastructure.storage.service import public_preview_url
 from app.modules.colorization.repositories import ColorizationJobRepository
 from app.modules.projects.repositories import ProjectRepository
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = get_logger(__name__)
@@ -27,7 +27,7 @@ _JOB_TERMINAL = {"completed", "failed", "error"}
 
 @router.get("/metrics", response_model=Dict[str, Any])
 async def get_metrics(
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession = get_session_dep,
 ) -> Dict[str, Any]:
     """Return aggregate metrics for the dashboard."""
     logger.info("Calculando métricas del dashboard")

@@ -10,17 +10,17 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID
 
+from app.api.deps import file_dep, get_session_dep
 from app.application.use_cases.correct_mask import CorrectMaskInput, CorrectMaskUseCase
 from app.application.use_cases.edit_mask import EditMaskInput, EditMaskUseCase
 from app.application.use_cases.replace_mask import ReplaceMaskInput, ReplaceMaskUseCase
 from app.core.config import get_settings
 from app.core.exceptions import ForbiddenError, NotFoundError
-from app.infrastructure.database.session import get_session
 from app.infrastructure.storage.service import StorageService
 from app.modules.character_analysis.repositories import CharacterAppearanceRepository
 from app.modules.colorization.repositories import MaskArtifactRepository
 from app.modules.page_analysis.repositories import AnalysisRepository
-from fastapi import APIRouter, Depends, File, Form, UploadFile
+from fastapi import Form, UploadFile
 from fastapi.responses import FileResponse
 from PIL import Image
 from pydantic import BaseModel, Field
@@ -34,7 +34,7 @@ class MaskCorrectionBody(BaseModel):
 
 
 @router.get("/analysis/{analysis_id}/masks")
-async def list_analysis_masks(analysis_id: UUID, session: AsyncSession = Depends(get_session)):
+async def list_analysis_masks(analysis_id: UUID, session: AsyncSession = get_session_dep):
     analysis = await AnalysisRepository(session).get(analysis_id)
     if analysis is None:
         raise NotFoundError("Analysis not found.")
@@ -60,7 +60,7 @@ async def list_analysis_masks(analysis_id: UUID, session: AsyncSession = Depends
 
 @router.patch("/appearances/{appearance_id}/mask/correct")
 async def correct_appearance_mask(
-    appearance_id: UUID, body: MaskCorrectionBody, session: AsyncSession = Depends(get_session)
+    appearance_id: UUID, body: MaskCorrectionBody, session: AsyncSession = get_session_dep
 ):
     output = await CorrectMaskUseCase(artifact_repository=MaskArtifactRepository(session)).execute(
         CorrectMaskInput(appearance_id=appearance_id, correcciones=body.correcciones)
@@ -69,7 +69,7 @@ async def correct_appearance_mask(
 
 
 @router.get("/masks/{mask_id}/content")
-async def get_mask_content(mask_id: UUID, session: AsyncSession = Depends(get_session)):
+async def get_mask_content(mask_id: UUID, session: AsyncSession = get_session_dep):
     """Serve mask image bytes only to authenticated users and only inside STORAGE_ROOT."""
     mask = await MaskArtifactRepository(session).get(mask_id)
     if mask is None:
@@ -119,8 +119,8 @@ async def _save_mask_upload(file: UploadFile) -> dict[str, Any]:
 async def edit_appearance_mask(
     appearance_id: UUID,
     tipo_mascara: str = Form(...),
-    file: UploadFile = File(...),
-    session: AsyncSession = Depends(get_session),
+    file: UploadFile = file_dep,
+    session: AsyncSession = get_session_dep,
 ):
     if await CharacterAppearanceRepository(session).get(appearance_id) is None:
         raise NotFoundError("Character appearance not found.")
@@ -146,8 +146,8 @@ async def edit_appearance_mask(
 @router.put("/appearances/{appearance_id}/mask/replace")
 async def replace_appearance_mask(
     appearance_id: UUID,
-    file: UploadFile = File(...),
-    session: AsyncSession = Depends(get_session),
+    file: UploadFile = file_dep,
+    session: AsyncSession = get_session_dep,
 ):
     if await CharacterAppearanceRepository(session).get(appearance_id) is None:
         raise NotFoundError("Character appearance not found.")

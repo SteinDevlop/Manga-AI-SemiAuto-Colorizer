@@ -93,9 +93,7 @@ class Settings(BaseSettings):
             problems.append("ALGORITHM debe ser HS256, HS384 o HS512")
         if problems:
             if self.is_production:
-                raise ValueError(
-                    "Configuración insegura para ENVIRONMENT=production."
-                )
+                raise ValueError("Configuración insegura para ENVIRONMENT=production.")
             # En desarrollo, advertimos sin exponer detalles sensibles del problema.
             _log.warning(
                 "Configuración insegura detectada en entorno no producción; revisar configuración antes de despliegue."

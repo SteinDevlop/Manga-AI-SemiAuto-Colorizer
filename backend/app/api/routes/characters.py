@@ -6,6 +6,7 @@ from typing import Any
 from uuid import UUID
 
 from app.ai_engine.adapters.mock.character_matcher import MockCharacterMatcher
+from app.api.deps import get_session_dep
 from app.application.use_cases.add_character_reference import (
     AddCharacterReferenceInput,
     AddCharacterReferenceUseCase,
@@ -38,7 +39,6 @@ from app.application.use_cases.update_character_memory import (
     UpdateCharacterMemoryUseCase,
 )
 from app.core.exceptions import NotFoundError
-from app.infrastructure.database.session import get_session
 from app.modules.character_analysis.repositories import (
     CharacterAppearanceRepository,
     CharacterRepository,
@@ -49,7 +49,7 @@ from app.modules.character_configuration.repositories import (
 )
 from app.modules.character_memory.repositories import CharacterMemoryRepository
 from app.modules.page_analysis.repositories import AnalysisRepository
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -80,7 +80,7 @@ class CharacterMemoryBody(BaseModel):
 
 
 @router.get("/analysis/{analysis_id}/characters")
-async def list_analysis_characters(analysis_id: UUID, session: AsyncSession = Depends(get_session)):
+async def list_analysis_characters(analysis_id: UUID, session: AsyncSession = get_session_dep):
     analysis = await AnalysisRepository(session).get(analysis_id)
     if analysis is None:
         raise NotFoundError("Analysis not found.")
@@ -138,7 +138,7 @@ async def list_analysis_characters(analysis_id: UUID, session: AsyncSession = De
 
 @router.patch("/characters/{character_id}/attributes/{name}")
 async def edit_attribute(
-    character_id: UUID, name: str, body: AttributeBody, session: AsyncSession = Depends(get_session)
+    character_id: UUID, name: str, body: AttributeBody, session: AsyncSession = get_session_dep
 ):
     if await CharacterRepository(session).get(character_id) is None:
         raise NotFoundError("Character not found.")
@@ -156,9 +156,7 @@ async def edit_attribute(
 
 
 @router.post("/characters/{character_id}/attributes/{name}/approve")
-async def approve_attribute(
-    character_id: UUID, name: str, session: AsyncSession = Depends(get_session)
-):
+async def approve_attribute(character_id: UUID, name: str, session: AsyncSession = get_session_dep):
     output = await ApproveCharacterAttributeUseCase(
         character_attribute_repository=CharacterAttributeRepository(session)
     ).execute(ApproveCharacterAttributeInput(character_id=character_id, nombre_atributo=name))
@@ -167,7 +165,7 @@ async def approve_attribute(
 
 @router.patch("/characters/{character_id}/palettes/{name}")
 async def edit_palette(
-    character_id: UUID, name: str, body: PaletteBody, session: AsyncSession = Depends(get_session)
+    character_id: UUID, name: str, body: PaletteBody, session: AsyncSession = get_session_dep
 ):
     if await CharacterRepository(session).get(character_id) is None:
         raise NotFoundError("Character not found.")
@@ -182,9 +180,7 @@ async def edit_palette(
 
 
 @router.post("/characters/{character_id}/palettes/{name}/approve")
-async def approve_palette(
-    character_id: UUID, name: str, session: AsyncSession = Depends(get_session)
-):
+async def approve_palette(character_id: UUID, name: str, session: AsyncSession = get_session_dep):
     output = await ApproveCharacterPaletteUseCase(
         character_palette_repository=CharacterPaletteRepository(session)
     ).execute(ApproveCharacterPaletteInput(character_id=character_id, nombre_color=name))
@@ -192,9 +188,7 @@ async def approve_palette(
 
 
 @router.get("/characters/{character_id}/appearances")
-async def list_character_appearances(
-    character_id: UUID, session: AsyncSession = Depends(get_session)
-):
+async def list_character_appearances(character_id: UUID, session: AsyncSession = get_session_dep):
     output = await ListCharacterAppearancesUseCase(CharacterAppearanceRepository(session)).execute(
         character_id
     )
@@ -203,7 +197,7 @@ async def list_character_appearances(
 
 @router.patch("/appearances/{appearance_id}/identity")
 async def review_identity(
-    appearance_id: UUID, body: IdentityReviewBody, session: AsyncSession = Depends(get_session)
+    appearance_id: UUID, body: IdentityReviewBody, session: AsyncSession = get_session_dep
 ):
     output = await ReviewIdentityUseCase(
         appearance_repository=CharacterAppearanceRepository(session),
@@ -213,9 +207,7 @@ async def review_identity(
 
 
 @router.post("/analysis/{analysis_id}/group-identities")
-async def group_analysis_identities(
-    analysis_id: UUID, session: AsyncSession = Depends(get_session)
-):
+async def group_analysis_identities(analysis_id: UUID, session: AsyncSession = get_session_dep):
     output = await GroupIdentitiesUseCase(
         analysis_repository=AnalysisRepository(session),
         appearance_repository=CharacterAppearanceRepository(session),
@@ -231,7 +223,7 @@ async def group_analysis_identities(
 
 @router.put("/characters/{character_id}/reference")
 async def add_character_reference(
-    character_id: UUID, body: StableReferenceBody, session: AsyncSession = Depends(get_session)
+    character_id: UUID, body: StableReferenceBody, session: AsyncSession = get_session_dep
 ):
     if await CharacterRepository(session).get(character_id) is None:
         raise NotFoundError("Character not found.")
@@ -244,7 +236,7 @@ async def add_character_reference(
 
 
 @router.get("/characters/{character_id}/memory")
-async def get_character_memory(character_id: UUID, session: AsyncSession = Depends(get_session)):
+async def get_character_memory(character_id: UUID, session: AsyncSession = get_session_dep):
     output = await GetCharacterMemoryUseCase(CharacterMemoryRepository(session)).execute(
         GetCharacterMemoryInput(character_id=character_id)
     )
@@ -253,7 +245,7 @@ async def get_character_memory(character_id: UUID, session: AsyncSession = Depen
 
 @router.patch("/characters/{character_id}/memory")
 async def update_character_memory(
-    character_id: UUID, body: CharacterMemoryBody, session: AsyncSession = Depends(get_session)
+    character_id: UUID, body: CharacterMemoryBody, session: AsyncSession = get_session_dep
 ):
     output = await UpdateCharacterMemoryUseCase(CharacterMemoryRepository(session)).execute(
         UpdateCharacterMemoryInput(
