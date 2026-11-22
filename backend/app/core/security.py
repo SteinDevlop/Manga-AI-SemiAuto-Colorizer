@@ -10,8 +10,6 @@
 
 from __future__ import annotations
 
-import base64
-import hashlib
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -33,8 +31,7 @@ class TokenError(Exception):
 
 
 def _prehash(password: str) -> bytes:
-    digest = hashlib.sha256(password.encode("utf-8")).digest()
-    return base64.b64encode(digest)  # 44 bytes, siempre < 72
+    return password.encode("utf-8")
 
 
 def get_password_hash(password: str) -> str:
