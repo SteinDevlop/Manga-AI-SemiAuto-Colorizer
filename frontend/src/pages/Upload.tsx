@@ -210,7 +210,6 @@ export function Upload() {
             <div style={{ marginTop: 10, border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden", background: "var(--surface)" }}>
               <img
                 src={preview}
-                {/* preview es una URL blob: generada por URL.createObjectURL; React escapa auto los atributos src */}
                 alt="Vista previa"
                 style={{
                   width: "100%",
