@@ -16,10 +16,9 @@ class CharacterDetection:
     def __init__(
         self,
         panel_id: UUID,
-        bbox: List[float],          # [x, y, w, h] normalized 0..1
+        bbox: List[float],  # [x, y, w, h] normalized 0..1
         confidence: float,
-    ):
-        ...
+    ): ...
 
 
 class CharacterAppearanceInput:
@@ -29,8 +28,7 @@ class CharacterAppearanceInput:
         panel_id: UUID,
         bbox: List[float],
         embedding: List[float],
-    ):
-        ...
+    ): ...
 
 
 class CharacterIdentityProposal:
@@ -40,8 +38,7 @@ class CharacterIdentityProposal:
         appearance_ids: List[UUID],
         confidence: float,
         ambiguous: bool,
-    ):
-        ...
+    ): ...
 
 
 class RegionRequest:
@@ -50,18 +47,16 @@ class RegionRequest:
         appearance_id: UUID,
         bbox: List[float],
         mask_artifact_id: UUID | None,
-    ):
-        ...
+    ): ...
 
 
 class MaskArtifactDTO:
     def __init__(
         self,
         artifact_id: UUID,
-        image_path: str,            # resolved through storage service
+        image_path: str,  # resolved through storage service
         bbox: List[float],
-    ):
-        ...
+    ): ...
 
 
 class ColorizationRequest:
@@ -73,11 +68,10 @@ class ColorizationRequest:
         mask_artifact_ids: List[UUID],
         reference_artifact_ids: List[UUID],
         palette_id: UUID,
-        attributes: dict,           # skin, hair, eyes, clothing, accessories
-        resolution_profile: str,    # fast / balanced / high_quality
+        attributes: dict,  # skin, hair, eyes, clothing, accessories
+        resolution_profile: str,  # fast / balanced / high_quality
         seed: int | None = None,
-    ):
-        ...
+    ): ...
 
 
 class ColorizationResult:
@@ -87,38 +81,27 @@ class ColorizationResult:
         duration_ms: int,
         vram_peak_mb: int | None,
         metrics: dict,
-    ):
-        ...
+    ): ...
 
 
 class CharacterDetector(Protocol):
-    def detect(self, page_path: str) -> List[CharacterDetection]:
-        ...
+    def detect(self, page_path: str) -> List[CharacterDetection]: ...
 
 
 class CharacterMatcher(Protocol):
     def group(
-        self,
-        appearances: List[CharacterAppearanceInput]
-    ) -> List[CharacterIdentityProposal]:
-        ...
+        self, appearances: List[CharacterAppearanceInput]
+    ) -> List[CharacterIdentityProposal]: ...
 
 
 class Segmenter(Protocol):
     def segment(
-        self,
-        image_path: str,
-        regions: List[RegionRequest]
-    ) -> List[MaskArtifactDTO]:
-        ...
+        self, image_path: str, regions: List[RegionRequest]
+    ) -> List[MaskArtifactDTO]: ...
 
 
 class ColorizationEngine(Protocol):
-    def colorize(
-        self,
-        request: ColorizationRequest
-    ) -> ColorizationResult:
-        ...
+    def colorize(self, request: ColorizationRequest) -> ColorizationResult: ...
 ```
 
 ## Conventions

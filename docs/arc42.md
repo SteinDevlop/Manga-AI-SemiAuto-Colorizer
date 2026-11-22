@@ -554,31 +554,25 @@ conceptual:
 ``` python
 from typing import Protocol
 
+
 class CharacterDetector(Protocol):
-    def detect(self, page_path: str) -> list["CharacterDetection"]:
-        ...
+    def detect(self, page_path: str) -> list["CharacterDetection"]: ...
+
 
 class CharacterMatcher(Protocol):
     def group(
-        self,
-        appearances: list["CharacterAppearanceInput"]
-    ) -> list["CharacterIdentityProposal"]:
-        ...
+        self, appearances: list["CharacterAppearanceInput"]
+    ) -> list["CharacterIdentityProposal"]: ...
+
 
 class Segmenter(Protocol):
     def segment(
-        self,
-        image_path: str,
-        regions: list["RegionRequest"]
-    ) -> list["MaskArtifact"]:
-        ...
+        self, image_path: str, regions: list["RegionRequest"]
+    ) -> list["MaskArtifact"]: ...
+
 
 class ColorizationEngine(Protocol):
-    def colorize(
-        self,
-        request: "ColorizationRequest"
-    ) -> "ColorizationResult":
-        ...
+    def colorize(self, request: "ColorizationRequest") -> "ColorizationResult": ...
 ```
 
 Los tipos de entrada y salida deben ser DTO/dataclasses versionados. Las
