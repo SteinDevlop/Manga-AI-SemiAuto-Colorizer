@@ -164,7 +164,7 @@ async def create_colorization(
                     "code": "queue_unavailable",
                     "message": "No se pudo encolar la colorización. Verifica que Redis/Celery estén activos.",
                 },
-            )
+            ) from exc
 
         logger.info("Trabajo de colorización creado: %s (análisis: %s)", job.id, analysis_id)
         return {
@@ -183,7 +183,7 @@ async def create_colorization(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create colorization job.",
-        )
+        ) from exc
 
 
 @router.get("")
@@ -216,7 +216,7 @@ async def list_colorizations(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(exc) or "Failed to list colorization jobs.",
-        )
+        ) from exc
 
 
 @router.get("/{job_id}")
@@ -256,7 +256,7 @@ async def get_colorization(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(exc) or "Failed to read colorization job.",
-        )
+        ) from exc
 
 
 @router.get("/{job_id}/result")
@@ -291,4 +291,4 @@ async def get_colorization_result(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(exc) or "Failed to serve result.",
-        )
+        ) from exc

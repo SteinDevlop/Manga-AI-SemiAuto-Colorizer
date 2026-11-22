@@ -90,7 +90,7 @@ async def list_projects(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error interno al listar proyectos.",
-        )
+        ) from exc
 
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=dict[str, Any])
@@ -137,7 +137,7 @@ async def create_project(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="No se pudo crear el proyecto.",
-        )
+        ) from exc
 
 
 @router.get("/{project_id}", response_model=dict[str, Any])
@@ -207,7 +207,7 @@ async def get_project(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error interno al obtener el proyecto.",
-        )
+        ) from exc
 
 
 @router.delete(
@@ -240,7 +240,7 @@ async def delete_project(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error interno al eliminar proyecto.",
-        )
+        ) from exc
 
 
 @router.patch("/{project_id}/stage", response_model=dict[str, Any])
@@ -401,4 +401,4 @@ async def transition_stage(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error interno al transicionar la etapa.",
-        )
+        ) from exc

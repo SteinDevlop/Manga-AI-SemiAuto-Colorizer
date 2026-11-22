@@ -142,7 +142,7 @@ async def analyze_page(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=exc.message,
-        )
+        ) from exc
     except AppError:
         raise
     except Exception as exc:  # pragma: no cover - infra failure path
@@ -150,7 +150,7 @@ async def analyze_page(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(exc) or "Analysis failed.",
-        )
+        ) from exc
 
 
 @router.get("/{analysis_id}")
@@ -231,7 +231,7 @@ async def get_analysis(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=exc.message,
-        )
+        ) from exc
     except AppError:
         raise
     except Exception as exc:  # pragma: no cover - infra failure path
@@ -239,7 +239,7 @@ async def get_analysis(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(exc) or "Failed to read analysis.",
-        )
+        ) from exc
 
 
 @router.post("/{analysis_id}/approve", status_code=status.HTTP_200_OK)
@@ -270,7 +270,7 @@ async def approve_analysis(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=exc.message,
-        )
+        ) from exc
     except AppError:
         raise
     except Exception as exc:  # pragma: no cover - infra failure path
@@ -278,4 +278,4 @@ async def approve_analysis(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(exc) or "Failed to approve analysis.",
-        )
+        ) from exc

@@ -205,7 +205,7 @@ async def upload_page(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=exc.message,
-        )
+        ) from exc
     except AppError:
         raise
     except Exception as exc:  # pragma: no cover - infra failure path
@@ -213,7 +213,7 @@ async def upload_page(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(exc) or "Failed to upload page.",
-        )
+        ) from exc
     finally:
         try:
             tmp_path.unlink(missing_ok=True)  # type: ignore[name-defined]
@@ -263,7 +263,7 @@ async def list_pages(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error interno al listar páginas.",
-        )
+        ) from exc  # noqa: B904
 
 
 @router.get("/{page_id}/content")

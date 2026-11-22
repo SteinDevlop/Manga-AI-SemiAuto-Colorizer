@@ -175,7 +175,7 @@ async def list_models(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error interno al listar modelos.",
-        )
+        ) from exc
 
 
 @router.get("/{model_id}", response_model=dict[str, Any])
@@ -187,10 +187,14 @@ async def get_model(
     try:
         use_case = GetModelUseCase(model_manifest_repository=ModelManifestRepository(session))
         output = await use_case.execute(GetModelInput(model_id=UUID(model_id)))
-    except NotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Model not found.")
-    except ValueError:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="model_id inválido.")
+    except NotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Model not found."
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="model_id inválido."
+        ) from exc
     except HTTPException:
         raise
     except AppError:
@@ -200,7 +204,7 @@ async def get_model(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error interno al obtener el modelo.",
-        )
+        ) from exc  # noqa: B904
 
     repo = ModelManifestRepository(session)
     manifest = await repo.get(manifest_id=UUID(model_id))
@@ -377,7 +381,7 @@ async def register_model(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=exc.to_dict(),
-        )
+        ) from exc  # noqa: B904
     except HTTPException:
         raise
     except AppError:
@@ -387,7 +391,7 @@ async def register_model(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error interno al registrar el modelo.",
-        )
+        ) from exc
 
     return {
         "id": output.id,
@@ -439,10 +443,12 @@ async def update_model_status(
         output = await use_case.execute(
             UpdateModelStatusInput(model_id=UUID(model_id), estado=estado)
         )
-    except NotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Model not found.")
+    except NotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Model not found."
+        ) from exc
     except ValidationError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=exc.to_dict())
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=exc.to_dict()) from exc
     except HTTPException:
         raise
     except AppError:
@@ -452,7 +458,7 @@ async def update_model_status(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error interno al actualizar el estado del modelo.",
-        )
+        ) from exc
 
     return {
         "id": output.id,
@@ -526,7 +532,7 @@ async def update_model(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error interno al editar el modelo.",
-        )
+        ) from exc
     if updated is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Model not found.")
 

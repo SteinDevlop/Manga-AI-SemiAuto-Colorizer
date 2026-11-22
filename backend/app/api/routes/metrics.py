@@ -88,4 +88,4 @@ async def get_metrics(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error interno al calcular métricas.",
-        )
+        ) from exc
