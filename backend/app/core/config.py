@@ -94,12 +94,12 @@ class Settings(BaseSettings):
         if problems:
             if self.is_production:
                 raise ValueError(
-                    "Configuración insegura para ENVIRONMENT=production: " + "; ".join(problems)
+                    "Configuración insegura para ENVIRONMENT=production."
                 )
-            for problem in problems:
-                _log.warning(
-                    "Configuración insegura (solo permitida fuera de producción): %s", problem
-                )
+            # En desarrollo, advertimos sin exponer detalles sensibles del problema.
+            _log.warning(
+                "Configuración insegura detectada en entorno no producción; revisar configuración antes de despliegue."
+            )
         return self
 
 
