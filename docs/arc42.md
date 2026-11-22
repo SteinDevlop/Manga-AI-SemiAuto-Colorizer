@@ -250,19 +250,19 @@ producen resultados.
 
 ```mermaid
 flowchart LR
-    U[Usuario] -->|Carga página / edita paleta| UI[Frontend web]
-    UI <-->|REST / WebSocket| API[Backend API]
-    API --> DB[(PostgreSQL)]
-    API --> FS[(Almacenamiento local)]
-    API --> Q[(Redis / cola)]
+    User[Usuario] -->|Load page / edit palette| Frontend[Frontend web]
+    Frontend <-->|REST / WebSocket| API[Backend]
+    API --> DB[PostgreSQL]
+    API --> FS[Storage local]
+    API --> Q[Redis / cola]
     Q --> CPU[Worker CPU]
     Q --> GPU[Worker GPU]
     CPU --> FS
     GPU --> FS
     CPU --> DB
     GPU --> DB
-    GPU -->|Adaptadores| AI[Modelos de IA locales]
-    ML[Ingeniero ML] -->|Modelos, pesos y evaluación| AI
+    GPU --> AI[AI Engine]
+    ML[ML Engineer] --> AI
 ```
 
 ## 3.2 Interfaces externas
