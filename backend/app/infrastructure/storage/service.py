@@ -146,3 +146,19 @@ class StorageService:
                     }
                 )
         return results
+
+
+def public_preview_url(path: str | None) -> str | None:
+    """Convierte la ruta en disco de una miniatura a una URL pública ``/files/...``.
+
+    Nunca expone rutas absolutas del servidor; devuelve ``None`` si la ruta no
+    está bajo ``<STORAGE_ROOT>/previews``.
+    """
+    if not path:
+        return None
+    try:
+        base = (Path(get_settings().STORAGE_ROOT) / "previews").resolve()
+        rel = Path(path).resolve().relative_to(base)
+    except (ValueError, OSError):
+        return None
+    return f"/files/previews/{rel.as_posix()}"

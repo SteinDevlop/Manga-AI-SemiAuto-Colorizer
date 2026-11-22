@@ -16,11 +16,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Herramientas de compilacion para dependencias con extensiones nativas
-# (psycopg2, etc.) y cliente de postgres para healthchecks si se requiere.
+# Herramientas de compilacion para dependencias con extensiones nativas y
+# cliente de postgres para healthchecks si se requiere. psycopg2-binary y el
+# resto de dependencias provienen de backend/pyproject.toml (fuente unica).
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential libpq-dev curl ca-certificates \
-    && pip install --no-cache-dir psycopg2-binary \
     && rm -rf /var/lib/apt/lists/*
 
 # Dependencias Python del monolito (api + celery workers).
@@ -28,7 +28,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY backend/pyproject.toml ./pyproject.toml
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -e .[dev] && \
-    pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
+    pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu && \
+    pip install --no-cache-dir onnxruntime
 
 # Codigo del monolito (misma imagen para api, worker-cpu y worker-gpu base).
 COPY backend/ ./backend

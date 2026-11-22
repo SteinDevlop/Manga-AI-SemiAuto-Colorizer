@@ -61,27 +61,36 @@ def test_character_repository_has_crud_methods():
 
 
 def test_character_appearance_repository_has_crud_methods():
-    """CharacterAppearanceRepository must expose CRUD methods plus list filters."""
+    """CharacterAppearanceRepository exposes all identity use-case query/update ports."""
     methods = {name for name in dir(CharacterAppearanceRepository) if not name.startswith("_")}
     assert EXPECTED_METHODS.issubset(methods)
+    assert {"list_by_page", "list_by_character", "update_character"}.issubset(methods)
 
 
 def test_character_attribute_repository_has_crud_methods():
-    """CharacterAttributeRepository must expose CRUD methods plus list-by-character."""
+    """CharacterAttributeRepository exposes CRUD and use-case lookup ports."""
     methods = {name for name in dir(CharacterAttributeRepository) if not name.startswith("_")}
     assert EXPECTED_METHODS.issubset(methods)
+    assert "get_by_character_and_name" in methods
 
 
 def test_character_palette_repository_has_crud_methods():
-    """CharacterPaletteRepository must expose CRUD methods plus list-by-character."""
+    """CharacterPaletteRepository exposes CRUD and use-case lookup ports."""
     methods = {name for name in dir(CharacterPaletteRepository) if not name.startswith("_")}
     assert EXPECTED_METHODS.issubset(methods)
+    assert "get_by_character_and_name" in methods
+
+
+def test_character_memory_repository_has_memory_lookup():
+    from app.modules.character_memory.repositories import CharacterMemoryRepository
+    assert "get_by_character" in dir(CharacterMemoryRepository)
 
 
 def test_mask_artifact_repository_has_crud_methods():
-    """MaskArtifactRepository must expose CRUD methods plus list-by-appearance."""
+    """MaskArtifactRepository exposes CRUD and mask use-case lookup ports."""
     methods = {name for name in dir(MaskArtifactRepository) if not name.startswith("_")}
     assert EXPECTED_METHODS.issubset(methods)
+    assert "list_by_appearance" in methods
 
 
 def test_colorization_job_repository_has_crud_methods():

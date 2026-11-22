@@ -6,6 +6,7 @@
  * sección Pipeline del sidebar.
  */
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const WORKSPACE_ITEMS = [
   { id: "dashboard", label: "Dashboard", path: "/" },
@@ -22,6 +23,7 @@ const SYSTEM_ITEMS: Array<{ id: string; label: string; path: string }> = [];
 export function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
 
   const isActive = (path: string) => {
     if (path === "/") {
@@ -87,10 +89,10 @@ export function Layout() {
                 : location.pathname.split("/").pop() ?? "Studio"}
             </strong>
           </div>
-          <div className="topbar-right">
-            <button className="btn btn-vermilion btn-sm" onClick={() => navigate("/projects")}>
-              + Nuevo proyecto
-            </button>
+          <div className="topbar-right" style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ color: "var(--ink-muted)", fontSize: "0.85rem" }}>{user?.email}</span>
+            <button className="btn btn-outline btn-sm" onClick={() => { signOut(); navigate("/login", { replace: true }); }}>Cerrar sesión</button>
+            <button className="btn btn-vermilion btn-sm" onClick={() => navigate("/projects")}>+ Nuevo proyecto</button>
           </div>
         </header>
 

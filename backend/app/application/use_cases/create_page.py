@@ -59,6 +59,7 @@ class CreatePageInput:
     ancho: int | None = None
     alto: int | None = None
     tamano_bytes: int | None = None
+    allow_duplicate_hash: bool = False
 
 
 @dataclass(frozen=True)
@@ -106,7 +107,7 @@ class CreatePageUseCase:
                     details={"field": "project_id", "reason": "not_found"},
                 )
 
-            if await self._page_repository.exists_by_hash(hash_sha256=input_data.hash_sha256):
+            if not input_data.allow_duplicate_hash and await self._page_repository.exists_by_hash(hash_sha256=input_data.hash_sha256):
                 logger.warning(
                     "Hash de página duplicado: %s", input_data.hash_sha256
                 )

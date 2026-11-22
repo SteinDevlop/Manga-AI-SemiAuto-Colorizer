@@ -36,7 +36,7 @@ export default function Review() {
         </button>
       </div>
 
-      {error && <p style={{ color: "#c0392b", fontSize: 0.85, margin: "8px 0" }}>{error}</p>}
+      {error && <p style={{ color: "#c0392b", fontSize: "0.85rem", margin: "8px 0" }}>{error}</p>}
 
       <div className="grid-2">
         <div className="panel-box">
@@ -62,10 +62,10 @@ export default function Review() {
       >
         <div className="modal-card">
           <span className="eyebrow">{'POST /api/v1/analysis/{analysis_id}/approve…'}</span>
-          <h3 style={{ fontFamily: "var(--font-display)", fontSize: 1.3, margin: "8px 0" }}>
+          <h3 style={{ fontFamily: "var(--font-display)", fontSize: "1.3rem", margin: "8px 0" }}>
             Confirm Color Configuration
           </h3>
-          <p style={{ fontSize: 0.86, color: "var(--ink-muted)", marginBottom: 18 }}>
+          <p style={{ fontSize: "0.86rem", color: "var(--ink-muted)", marginBottom: 18 }}>
             You are approving the analysis for colorization. Once approved, you can proceed to colorize the page.
           </p>
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>

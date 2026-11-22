@@ -44,11 +44,11 @@ export function StagePlaceholder({ stage, isCurrent, onComplete }: StagePlacehol
   return (
     <section style={{ border: "1px solid var(--border)", borderRadius: 10, padding: 24, background: "var(--surface)" }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 12 }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 0.8, fontWeight: 600 }}>{idx + 1}. {stageLabel(stage)}</span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.8rem", fontWeight: 600 }}>{idx + 1}. {stageLabel(stage)}</span>
         {isCurrent ? (
-          <span style={{ fontSize: 0.75, color: "var(--ink-muted)" }}>Etapa actual</span>
+          <span style={{ fontSize: "0.75rem", color: "var(--ink-muted)" }}>Etapa actual</span>
         ) : (
-          <span style={{ fontSize: 0.75, color: "var(--ink-muted)" }}>Etapa previa (retrocediste)</span>
+          <span style={{ fontSize: "0.75rem", color: "var(--ink-muted)" }}>Etapa previa (retrocediste)</span>
         )}
       </div>
       <p style={{ color: "var(--ink-muted)", marginBottom: 18, maxWidth: 600 }}>
@@ -67,7 +67,7 @@ export function StagePlaceholder({ stage, isCurrent, onComplete }: StagePlacehol
           Proyecto completado
         </button>
       ) : (
-        <p style={{ color: "var(--ink-muted)", fontSize: 0.85 }}>
+        <p style={{ color: "var(--ink-muted)", fontSize: "0.85rem" }}>
           Usa el stepper de arriba para retroceder a esta etapa, o avanza desde la etapa actual.
         </p>
       )}

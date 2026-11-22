@@ -100,7 +100,7 @@ export default function AnalysisList() {
                 <strong>{page.nombre_archivo_original}</strong>
                 <span className="badge badge-review">{page.estado}</span>
               </div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 0.7, color: "var(--ink-muted)" }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.7rem", color: "var(--ink-muted)" }}>
                 {page.hash_sha256?.slice(0, 16)}…
               </div>
               <button type="button" className="btn btn-outline btn-sm" onClick={(ev) => {

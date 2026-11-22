@@ -35,10 +35,10 @@ export function Approve() {
     if (!id) return;
     setView((v) => ({ ...v, loading: true, error: null }));
     try {
-      const analysis = await api.get<Analysis>(`/analyses/${id}`);
+      const analysis = await api.get<Analysis>(`/analysis/${id}`);
       let characters: Character[] = [];
       try {
-        characters = await api.get<Character[]>(`/analyses/${id}/characters`);
+        characters = await api.get<Character[]>(`/analysis/${id}/characters`);
       } catch {
         // Endpoint may not exist yet in P7; render without character detail.
         characters = [];
@@ -67,7 +67,7 @@ export function Approve() {
     if (!id) return;
     setView((v) => ({ ...v, loading: true, error: null }));
     try {
-      await api.post(`/analyses/${id}/approve`);
+      await api.approveAnalysis(id);
       setView((v) => ({
         ...v,
         loading: false,
@@ -90,7 +90,7 @@ export function Approve() {
 
   if (view.loading) {
     return (
-      <div className="page approve" style={{ padding: 2 }}>
+      <div className="page approve" style={{ padding: "2rem" }}>
         <p>Loading analysis...</p>
       </div>
     );
@@ -98,7 +98,7 @@ export function Approve() {
 
   if (view.error) {
     return (
-      <div className="page approve" style={{ padding: 2 }}>
+      <div className="page approve" style={{ padding: "2rem" }}>
         <p>{view.error}</p>
       </div>
     );
@@ -107,18 +107,18 @@ export function Approve() {
   const analysis = view.analysis;
   if (!analysis) {
     return (
-      <div className="page approve" style={{ padding: 2 }}>
+      <div className="page approve" style={{ padding: "2rem" }}>
         <p>Analysis not found.</p>
       </div>
     );
   }
 
   return (
-    <div className="page approve" style={{ padding: 2, maxWidth: 900 }}>
+    <div className="page approve" style={{ padding: "2rem", maxWidth: 900 }}>
       <h1>Approve analysis</h1>
       <p>Review the detected characters, attributes and palettes before colorizing.</p>
 
-      <section style={{ marginBottom: 1.5 }}>
+      <section style={{ marginBottom: "1.5rem" }}>
         <h2>Analysis</h2>
         <p>Id: {analysis.id}</p>
         <p>Page: {analysis.page_id}</p>
@@ -126,7 +126,7 @@ export function Approve() {
         <p>Confidence: {analysis.confianza_global ?? "n/a"}</p>
       </section>
 
-      <section style={{ marginBottom: 1.5 }}>
+      <section style={{ marginBottom: "1.5rem" }}>
         <h2>Characters</h2>
         {view.characters.length === 0 ? (
           <p>No characters detected.</p>
@@ -137,27 +137,27 @@ export function Approve() {
               style={{
                 border: "1px solid #334155",
                 borderRadius: 0.5,
-                padding: 1,
-                marginBottom: 0.75,
+                padding: "1rem",
+                marginBottom: "0.75rem",
                 backgroundColor: "#1e293b",
               }}
             >
               <h3 style={{ margin: "0 0 0.5rem 0" }}>{character.nombre}</h3>
               <p>Confidence: {character.confianza_identidad ?? "n/a"}</p>
 
-              <section style={{ marginTop: 0.75 }}>
+              <section style={{ marginTop: "0.75rem" }}>
                 <h4>Attributes</h4>
                 {character.attributes.length === 0 ? (
                   <p>No attributes.</p>
                 ) : (
-                  <ul style={{ paddingLeft: 1.2, margin: 0 }}>
+                  <ul style={{ paddingLeft: "1.2rem", margin: 0 }}>
                     {character.attributes.map((attr) => (
                       <li key={attr.id}>
                         {attr.nombre_atributo}: {attr.valor_sugerido ?? "n/a"}
                         <span
                           style={{
-                            marginLeft: 0.5,
-                            fontSize: 0.85,
+                            marginLeft: "0.5rem",
+                            fontSize: "0.85rem",
                             padding: "0.1em 0.4em",
                             borderRadius: 0.25,
                             backgroundColor: attr.esta_aprobado ? "#166534" : "#454d5c",
@@ -172,19 +172,19 @@ export function Approve() {
                 )}
               </section>
 
-              <section style={{ marginTop: 0.75 }}>
+              <section style={{ marginTop: "0.75rem" }}>
                 <h4>Palettes</h4>
                 {character.palettes.length === 0 ? (
                   <p>No palettes.</p>
                 ) : (
-                  <ul style={{ paddingLeft: 1.2, margin: 0 }}>
+                  <ul style={{ paddingLeft: "1.2rem", margin: 0 }}>
                     {character.palettes.map((palette) => (
                       <li key={palette.id}>
                         {palette.nombre_color}: {palette.valor_hex ?? "n/a"}
                         <span
                           style={{
-                            marginLeft: 0.5,
-                            fontSize: 0.85,
+                            marginLeft: "0.5rem",
+                            fontSize: "0.85rem",
                             padding: "0.1em 0.4em",
                             borderRadius: 0.25,
                             backgroundColor: palette.esta_aprobado ? "#166534" : "#454d5c",
@@ -203,13 +203,13 @@ export function Approve() {
         )}
       </section>
 
-      <div style={{ display: "flex", gap: 0.75, alignItems: "center" }}>
+      <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
         <button
           onClick={handleApprove}
           disabled={view.loading || view.approved}
           style={{
             padding: "0.6rem 1.2rem",
-            fontSize: 1,
+            fontSize: "1rem",
             cursor: view.approved || view.loading ? "default" : "pointer",
             opacity: view.approved || view.loading ? 0.5 : 1,
           }}
@@ -221,7 +221,7 @@ export function Approve() {
           disabled={!view.approved}
           style={{
             padding: "0.6rem 1.2rem",
-            fontSize: 1,
+            fontSize: "1rem",
             cursor: !view.approved ? "default" : "pointer",
             opacity: !view.approved ? 0.5 : 1,
           }}

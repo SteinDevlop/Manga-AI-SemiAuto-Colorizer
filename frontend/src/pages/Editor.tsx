@@ -93,7 +93,7 @@ export default function Editor() {
       <div className="page-head">
         <div>
           <span className="eyebrow">04 // Character & Color</span>
-          <h1 className="h1">Character Editor — Analysis {analysisId.slice(0, 8)}…</h1>
+          <h1 className="h1">Character Editor — Analysis {(analysisId ?? "").slice(0, 8)}…</h1>
         </div>
         <button type="button" className="btn btn-outline btn-sm" onClick={() => navigate("/projects")}>
           ← Back to Projects
@@ -147,7 +147,7 @@ export default function Editor() {
                     </div>
                   ))}
                   {!character.attributes || character.attributes.length === 0 && (
-                    <div style={{ gridColumn: "1 / -1", textAlign: "center", color: "var(--ink-muted)", fontSize: 0.85 }}>
+                    <div style={{ gridColumn: "1 / -1", textAlign: "center", color: "var(--ink-muted)", fontSize: "0.85rem" }}>
                       No attributes detected for this character.
                     </div>
                   )}
@@ -158,7 +158,7 @@ export default function Editor() {
                     <span className="eyebrow">Appearances ({charAppearances.length})</span>
                     <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6 }}>
                       {charAppearances.map((appearance: CharacterAppearance) => (
-                        <div key={appearance.id} style={{ padding: 8, background: "#0f172a", borderRadius: 4, fontSize: 0.85, color: "var(--ink-muted)" }}>
+                        <div key={appearance.id} style={{ padding: 8, background: "#0f172a", borderRadius: 4, fontSize: "0.85rem", color: "var(--ink-muted)" }}>
                           Appearance {appearance.id.slice(0, 8)}…{appearance.panel_id ? ` · Panel ${appearance.panel_id.slice(0, 8)}…` : ""}
                         </div>
                       ))}

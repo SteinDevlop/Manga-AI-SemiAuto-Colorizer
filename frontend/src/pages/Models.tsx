@@ -72,10 +72,10 @@ export default function Models() {
 
   useEffect(() => {
     let cancelled = false;
-    api.get<Model[]>("/models")
+    api.get<{ items: Model[]; total: number }>("/models")
       .then((data) => {
         if (!cancelled) {
-          setModels(data);
+          setModels(data.items);
           setLoading(false);
         }
       })
@@ -91,9 +91,9 @@ export default function Models() {
   const handleToggle = async (model: Model) => {
     setToggleLoading((prev) => new Set([...prev, model.id]));
     try {
-      await api.patch(`/models/${model.id}/status`, {
-        estado: model.is_active ? "deshabilitado" : "disponible",
-      });
+      const body = new FormData();
+      body.append("estado", model.is_active ? "deshabilitado" : "disponible");
+      await api.patch(`/models/${model.id}/status`, body);
       setModels((ms) =>
         ms.map((m) =>
           m.id === model.id ? { ...m, is_active: !m.is_active } : m
@@ -168,7 +168,10 @@ export default function Models() {
   const handleEditSave = async (id: string) => {
     setEditing(null);
     try {
-      await api.put(`/models/${id}`, { nombre: editName.trim(), descripcion: editDesc.trim() || undefined });
+      const body = new FormData();
+      body.append("nombre", editName.trim());
+      if (editDesc.trim()) body.append("descripcion", editDesc.trim());
+      await api.put(`/models/${id}`, body);
       window.location.reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo editar el modelo.");
@@ -239,7 +242,7 @@ export default function Models() {
 
       {/* Registro */}
       <div style={{ border: "1px solid var(--border)", borderRadius: 10, padding: 18, background: "var(--surface)", marginBottom: 24 }}>
-        <div style={{ fontWeight: 600, marginBottom: 10, fontSize: 0.9 }}>Registrar modelo</div>
+        <div style={{ fontWeight: 600, marginBottom: 10, fontSize: "0.9rem" }}>Registrar modelo</div>
         <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
           <button
             type="button"
@@ -258,62 +261,62 @@ export default function Models() {
         </div>
         <form onSubmit={handleRegister} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <div style={{ gridColumn: "span 2" }}>
-            <label style={{ display: "block", fontSize: 0.82, fontWeight: 600, marginBottom: 4 }}>Nombre del modelo</label>
+            <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, marginBottom: 4 }}>Nombre del modelo</label>
             <input type="text" value={regNombre} onChange={(e) => setRegNombre(e.target.value)} placeholder="Ej. sumi_unet_cpu" required style={{ width: "100%", padding: "8px 10px", border: "1px solid var(--border)", borderRadius: 6, background: "var(--surface)" }} />
           </div>
           <div>
-            <label style={{ display: "block", fontSize: 0.82, fontWeight: 600, marginBottom: 4 }}>Tarea (familia)</label>
+            <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, marginBottom: 4 }}>Tarea (familia)</label>
             <input type="text" value={regFamilia} onChange={(e) => setRegFamilia(e.target.value)} placeholder="Ej. colorizacion" required style={{ width: "100%", padding: "8px 10px", border: "1px solid var(--border)", borderRadius: 6, background: "var(--surface)" }} />
           </div>
           <div>
-            <label style={{ display: "block", fontSize: 0.82, fontWeight: 600, marginBottom: 4 }}>Versión</label>
+            <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, marginBottom: 4 }}>Versión</label>
             <input type="text" value={regVersion} onChange={(e) => setRegVersion(e.target.value)} placeholder="v1.0.0" required style={{ width: "100%", padding: "8px 10px", border: "1px solid var(--border)", borderRadius: 6, background: "var(--surface)" }} />
           </div>
           <div style={{ gridColumn: "span 2" }}>
-            <label style={{ display: "block", fontSize: 0.82, fontWeight: 600, marginBottom: 4 }}>Descripción</label>
+            <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, marginBottom: 4 }}>Descripción</label>
             <input type="text" value={regDesc} onChange={(e) => setRegDesc(e.target.value)} placeholder="Opcional" style={{ width: "100%", padding: "8px 10px", border: "1px solid var(--border)", borderRadius: 6, background: "var(--surface)" }} />
           </div>
           {registerMode === "local_file" && (
             <div style={{ gridColumn: "span 2" }}>
-              <label style={{ display: "block", fontSize: 0.82, fontWeight: 600, marginBottom: 4 }}>Archivo (.pt / .onnx)</label>
+              <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, marginBottom: 4 }}>Archivo (.pt / .onnx)</label>
               <input type="file" accept=".pt,.pth,.onnx" onChange={(e) => setRegFile(e.target.files?.[0] ?? null)} required style={{ width: "100%", padding: "8px 10px", border: "1px solid var(--border)", borderRadius: 6, background: "var(--surface)" }} />
-              <p style={{ fontSize: 0.78, color: "var(--ink-muted)", marginTop: 4 }}>Los archivos .pt se cargan con weights_only=True para evitar ejecución de código vía pickle.</p>
+              <p style={{ fontSize: "0.78rem", color: "var(--ink-muted)", marginTop: 4 }}>Los archivos .pt se cargan con weights_only=True para evitar ejecución de código vía pickle.</p>
             </div>
           )}
           {registerMode === "api" && (
             <>
               <div>
-                <label style={{ display: "block", fontSize: 0.82, fontWeight: 600, marginBottom: 4 }}>URL base</label>
+                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, marginBottom: 4 }}>URL base</label>
                 <input type="text" value={regBaseUrl} onChange={(e) => setRegBaseUrl(e.target.value)} placeholder="https://api.ejemplo.com" required style={{ width: "100%", padding: "8px 10px", border: "1px solid var(--border)", borderRadius: 6, background: "var(--surface)" }} />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: 0.82, fontWeight: 600, marginBottom: 4 }}>Clave de API</label>
+                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, marginBottom: 4 }}>Clave de API</label>
                 <input type="password" value={regApiKey} onChange={(e) => setRegApiKey(e.target.value)} placeholder="sk-…" style={{ width: "100%", padding: "8px 10px", border: "1px solid var(--border)", borderRadius: 6, background: "var(--surface)" }} />
-                <p style={{ fontSize: 0.78, color: "var(--ink-muted)", marginTop: 4 }}>Se almacena cifrada; solo se muestra enmascarada.</p>
+                <p style={{ fontSize: "0.78rem", color: "var(--ink-muted)", marginTop: 4 }}>Se almacena cifrada; solo se muestra enmascarada.</p>
               </div>
               <div>
-                <label style={{ display: "block", fontSize: 0.82, fontWeight: 600, marginBottom: 4 }}>Método de autenticación</label>
+                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, marginBottom: 4 }}>Método de autenticación</label>
                 <select value={regAuth} onChange={(e) => setRegAuth(e.target.value)} style={{ width: "100%", padding: "8px 10px", border: "1px solid var(--border)", borderRadius: 6, background: "var(--surface)" }}>
-                  <option value="bearer">Bearer</option>
-                  <option value="apikey">API Key</option>
-                  <option value="none">Ninguna</option>
+                  <option key="auth-bearer" value="bearer">Bearer</option>
+                  <option key="auth-apikey" value="apikey">API Key</option>
+                  <option key="auth-none" value="none">Ninguna</option>
                 </select>
               </div>
               <div>
-                <label style={{ display: "block", fontSize: 0.82, fontWeight: 600, marginBottom: 4 }}>Endpoint</label>
+                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, marginBottom: 4 }}>Endpoint</label>
                 <input type="text" value={regEndpoint} onChange={(e) => setRegEndpoint(e.target.value)} placeholder="/infer" style={{ width: "100%", padding: "8px 10px", border: "1px solid var(--border)", borderRadius: 6, background: "var(--surface)" }} />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: 0.82, fontWeight: 600, marginBottom: 4 }}>Modelo / endpoint</label>
+                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, marginBottom: 4 }}>Modelo / endpoint</label>
                 <input type="text" value={regModelo} onChange={(e) => setRegModelo(e.target.value)} placeholder="sumi_unet_v1" style={{ width: "100%", padding: "8px 10px", border: "1px solid var(--border)", borderRadius: 6, background: "var(--surface)" }} />
               </div>
               <div style={{ display: "flex", gap: 8 }}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ display: "block", fontSize: 0.82, fontWeight: 600, marginBottom: 4 }}>Timeout (s)</label>
+                  <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, marginBottom: 4 }}>Timeout (s)</label>
                   <input type="number" value={regTimeout} onChange={(e) => setRegTimeout(e.target.value)} style={{ width: "100%", padding: "8px 10px", border: "1px solid var(--border)", borderRadius: 6, background: "var(--surface)" }} />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <label style={{ display: "block", fontSize: 0.82, fontWeight: 600, marginBottom: 4 }}>Reintentos</label>
+                  <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, marginBottom: 4 }}>Reintentos</label>
                   <input type="number" value={regRetries} onChange={(e) => setRegRetries(e.target.value)} style={{ width: "100%", padding: "8px 10px", border: "1px solid var(--border)", borderRadius: 6, background: "var(--surface)" }} />
                 </div>
               </div>
@@ -335,7 +338,7 @@ export default function Models() {
 
       {/* Listado */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-        <span style={{ fontWeight: 600, fontSize: 0.9 }}>{models.length} modelo(s) registrado(s)</span>
+        <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>{models.length} modelo(s) registrado(s)</span>
       </div>
       {models.length === 0 && (
         <div className="panel-box" style={{ textAlign: "center", padding: "48px 24px" }}>
@@ -365,12 +368,12 @@ export default function Models() {
             {models.map((m) => (
               <tr key={m.id}>
                 <td>{m.nombre}</td>
-                <td style={{ fontSize: 0.82, color: "var(--ink-muted)" }}>{taskLabel(m.tarea)}</td>
-                <td style={{ fontFamily: "var(--font-mono)", fontSize: 0.82 }}>{m.version}</td>
-                <td style={{ fontSize: 0.82, color: "var(--ink-muted)" }}>{m.source_type ?? "—"}</td>
-                <td style={{ fontFamily: "var(--font-mono)", fontSize: 0.82 }}>{m.formato ?? "—"}</td>
+                <td style={{ fontSize: "0.82rem", color: "var(--ink-muted)" }}>{taskLabel(m.tarea)}</td>
+                <td style={{ fontFamily: "var(--font-mono)", fontSize: "0.82rem" }}>{m.version}</td>
+                <td style={{ fontSize: "0.82rem", color: "var(--ink-muted)" }}>{m.source_type ?? "—"}</td>
+                <td style={{ fontFamily: "var(--font-mono)", fontSize: "0.82rem" }}>{m.formato ?? "—"}</td>
                 <td>
-                  <span className={`badge ${m.salud === "ok" ? "badge-done" : m.salud === "error" ? "badge-failed" : "badge-running"}`} style={{ fontSize: 0.75 }}>{m.salud}</span>
+                  <span className={`badge ${m.salud === "ok" ? "badge-done" : m.salud === "error" ? "badge-failed" : "badge-running"}`} style={{ fontSize: "0.75rem" }}>{m.salud}</span>
                 </td>
                 <td>
                   <button
@@ -382,7 +385,7 @@ export default function Models() {
                     {toggleLoading.has(m.id) ? "…" : m.is_active ? "Desactivar" : "Activar"}
                   </button>
                 </td>
-                <td style={{ fontFamily: "var(--font-mono)", fontSize: 0.78, color: "var(--ink-muted)" }}>{maskKey(m.api_key)}</td>
+                <td style={{ fontFamily: "var(--font-mono)", fontSize: "0.78rem", color: "var(--ink-muted)" }}>{maskKey(m.api_key)}</td>
                 <td>
                   {m.is_active && (
                     <>
@@ -396,7 +399,7 @@ export default function Models() {
                     </>
                   )}
                   {!m.is_active && (
-                    <span style={{ fontSize: 0.78, color: "var(--ink-muted)" }}>Inactivo</span>
+                    <span style={{ fontSize: "0.78rem", color: "var(--ink-muted)" }}>Inactivo</span>
                   )}
                 </td>
               </tr>
@@ -411,11 +414,11 @@ export default function Models() {
           <div style={{ fontWeight: 600, marginBottom: 10 }}>Editar modelo</div>
           <form onSubmit={(e) => { e.preventDefault(); handleEditSave(editing!); }} style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 500 }}>
             <div>
-              <label style={{ display: "block", fontSize: 0.82, fontWeight: 600, marginBottom: 4 }}>Nombre</label>
+              <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, marginBottom: 4 }}>Nombre</label>
               <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} required style={{ width: "100%", padding: "8px 10px", border: "1px solid var(--border)", borderRadius: 6, background: "var(--surface)" }} />
             </div>
             <div>
-              <label style={{ display: "block", fontSize: 0.82, fontWeight: 600, marginBottom: 4 }}>Descripción</label>
+              <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, marginBottom: 4 }}>Descripción</label>
               <input type="text" value={editDesc} onChange={(e) => setEditDesc(e.target.value)} style={{ width: "100%", padding: "8px 10px", border: "1px solid var(--border)", borderRadius: 6, background: "var(--surface)" }} />
             </div>
             <div style={{ display: "flex", gap: 8, marginTop: 8 }}>

@@ -87,3 +87,40 @@ Una página puede tener varios análisis si se vuelve a ejecutar el análisis. E
 ## Formato de errores
 
 Todas las respuestas de error usan el envelope `{ code, message, details?, request_id? }` (ver `docs/contratos/errors.md`).
+
+
+## Autenticación
+
+Todos los endpoints de negocio requieren `Authorization: Bearer <access_token>`. Excepciones: `GET /health`, `POST /api/v1/auth/token`.
+
+- `POST /api/v1/auth/token`: formulario OAuth2 `username` (correo) y `password`; devuelve `access_token`, `token_type`, `expires_in`.
+- `GET /api/v1/auth/me`: identidad del usuario autenticado.
+- `POST /api/v1/auth/change-password`: cambia contraseña con `current_password` y `new_password`.
+
+No existe registro público. Los usuarios se crean mediante `python -m app.cli create-user --email ...` o mediante las variables `FIRST_ADMIN_EMAIL` y `FIRST_ADMIN_PASSWORD` en el primer arranque.
+
+## Character
+
+- `GET /api/v1/analysis/{analysis_id}/characters`: personajes y apariciones del análisis, con atributos y paletas.
+- `PATCH /api/v1/characters/{character_id}/attributes/{name}`: crea/actualiza una sugerencia (`valor_sugerido`, `confianza_sugerencia`).
+- `POST /api/v1/characters/{character_id}/attributes/{name}/approve`: aprueba el valor sugerido.
+- `PATCH /api/v1/characters/{character_id}/palettes/{name}`: crea/actualiza una entrada de paleta (`valor_hex`).
+- `POST /api/v1/characters/{character_id}/palettes/{name}/approve`: aprueba el color sugerido.
+- `GET /api/v1/characters/{character_id}/appearances`: lista apariciones con datos de página y panel.
+- `PATCH /api/v1/appearances/{appearance_id}/identity`: reasigna una aparición a `character_id`.
+- `POST /api/v1/analysis/{analysis_id}/group-identities`: ejecuta el matcher configurado y persiste el agrupamiento. El matcher actual es mock.
+- `PUT /api/v1/characters/{character_id}/reference`: crea/actualiza `referencia_estable`.
+- `GET /api/v1/characters/{character_id}/memory`: consulta memoria estable.
+- `PATCH /api/v1/characters/{character_id}/memory`: actualiza `atributos_estables`, `atributos_escena` y/o `referencia_estable`.
+
+## Mask
+
+- `GET /api/v1/analysis/{analysis_id}/masks`: lista las máscaras y su estado de revisión.
+- `GET /api/v1/masks/{mask_id}/content`: sirve los bytes de la máscara con Bearer token; solo rutas contenidas dentro de `STORAGE_ROOT`.
+- `POST /api/v1/appearances/{appearance_id}/mask`: crea/edita el artefacto mediante multipart (`tipo_mascara`, `file`).
+- `PUT /api/v1/appearances/{appearance_id}/mask/replace`: reemplaza el archivo mediante multipart (`file`), valida SHA-256 e incrementa versión.
+- `PATCH /api/v1/appearances/{appearance_id}/mask/correct`: registra `correcciones` no vacío y aumenta la versión del artefacto.
+
+## Model Registry en colorización
+
+`POST /api/v1/colorizations` acepta `analysis_id` y opcionalmente `model_id` como query params. Si se omite `model_id`, se usa el modelo activo predeterminado o el primero activo de la tarea `colorizacion`. Si no existe un modelo activo, devuelve `409 no_active_colorization_model`. El worker vuelve a validar que el manifiesto siga activo y que corresponda a colorización antes de cargarlo. El pipeline U-Net actual solo admite modelos registrados `local_file` con formato `.pt` y una ruta de artefacto persistida; ONNX/API se registran pero todavía no son inferibles por este motor.

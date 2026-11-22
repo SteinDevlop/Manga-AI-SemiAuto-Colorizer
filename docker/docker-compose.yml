@@ -6,7 +6,8 @@
 #   docker compose -f docker/docker-compose.yml up -d
 #
 # El archivo `.env` (copia de docker/.env.example) debe estar en docker/,
-# junto a docker-compose.yml. Esta compose no expone PostgreSQL ni Redis al host.
+# junto a docker-compose.yml. PostgreSQL (5433) y Redis (6379) se publican SOLO en
+# 127.0.0.1 para depuracion local; nunca en las interfaces de red del host.
 #
 # Arquitectura: monolito modular + workers asincronos (docs/arc42.md seccion 7).
 # Los workers son procesos independientes del MISMO monolito, no microservicios.
@@ -28,7 +29,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     networks:
       - manga-internal
     healthcheck:
@@ -47,7 +48,7 @@ services:
     container_name: manga-redis
     command: ["redis-server", "--save", "", "--appendonly", "no"]
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     networks:
       - manga-internal
     healthcheck:
@@ -88,9 +89,9 @@ services:
         condition: service_healthy
     networks:
       - manga-internal
-    command: ["sh", "-c", "PYTHONPATH=/app/backend alembic -c alembic/alembic.ini upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]
+    command: ["sh", "-c", "export PYTHONPATH=/app/backend; for i in $(seq 1 30); do python -c \"import socket; s=socket.socket(); s.settimeout(2); s.connect(('postgres', 5432)); s.close()\" 2>/dev/null && break || sleep 2; done && alembic -c alembic/alembic.ini upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]
     volumes:
-      - ./ml:/app/ml
+      - ../ml:/app/ml
       - ./artifacts/checkpoints:/app/artifacts/checkpoints
       - ./data:/app/data
     healthcheck:
@@ -118,14 +119,14 @@ services:
       CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
       CELERY_QUEUES: ${WORKER_CPU_QUEUES}
       STORAGE_ROOT: /app/data
-      SUMI_COLORIZATION_CHECKPOINT: /app/artifacts/checkpoints/sumi_unet_cpu_v1/best.pt
+      SUMI_COLORIZATION_CHECKPOINT: /app/data/models/033961b3-e9b7-4d53-9229-f9d0c1428e05.onnx
       SUMI_COLORIZATION_RESULTS_DIR: /app/artifacts/results
     depends_on:
       redis:
         condition: service_healthy
     networks:
       - manga-internal
-    command: ["celery", "-A", "app.workers.celery_app", "worker", "-Q", "${WORKER_CPU_QUEUES}", "-n", "cpu@%h"]
+    command: ["celery", "-A", "app.workers.celery_app", "worker", "-Q", "${WORKER_CPU_QUEUES}", "-n", "cpu@%h", "--concurrency", "1"]
     volumes:
       - ./data:/app/data
       - ./artifacts/checkpoints:/app/artifacts/checkpoints

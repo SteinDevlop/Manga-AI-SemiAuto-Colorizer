@@ -54,9 +54,17 @@ export default function ResultsList() {
     return conf[estado] || "badge";
   };
 
-  const download = (jobId: string) => {
-    const base = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
-    window.location.href = `${base}/colorizations/${jobId}/result`;
+  const download = async (jobId: string) => {
+    try {
+      const blob = await api.downloadColorization(jobId);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url; anchor.download = `colorized-${jobId}.png`;
+      document.body.appendChild(anchor); anchor.click(); anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo descargar el resultado.");
+    }
   };
 
   const viewResult = (jobId: string) => navigate(`/results/${jobId}`);
@@ -132,19 +140,19 @@ export default function ResultsList() {
           <tbody>
             {jobs.map((job) => (
               <tr key={job.job_id}>
-                <td style={{ fontFamily: "var(--font-mono)", fontSize: 0.85 }}>
+                <td style={{ fontFamily: "var(--font-mono)", fontSize: "0.85rem" }}>
                   {job.job_id.slice(0, 8)}…
                 </td>
-                <td style={{ fontFamily: "var(--font-mono)", fontSize: 0.8, color: "var(--ink-muted)" }}>
+                <td style={{ fontFamily: "var(--font-mono)", fontSize: "0.8rem", color: "var(--ink-muted)" }}>
                   {job.analysis_id ? job.analysis_id.slice(0, 8) + "…" : "—"}
                 </td>
                 <td>
-                  <span className={statusBadge(job.estado)} style={{ fontSize: 0.8 }}>
+                  <span className={statusBadge(job.estado)} style={{ fontSize: "0.8rem" }}>
                     {job.estado}
                   </span>
                 </td>
                 <td>{job.progreso}%</td>
-                <td style={{ fontSize: 0.8, color: "var(--ink-muted)" }}>
+                <td style={{ fontSize: "0.8rem", color: "var(--ink-muted)" }}>
                   {job.version_modelo ?? "—"}
                 </td>
                 <td>
@@ -167,12 +175,12 @@ export default function ResultsList() {
                       </button>
                     </>
                   ) : (
-                    <span style={{ color: "var(--ink-muted)", fontSize: 0.85 }}>
+                    <span style={{ color: "var(--ink-muted)", fontSize: "0.85rem" }}>
                       {job.estado === "failed" ? "Fallido" : "Pendiente"}
                     </span>
                   )}
                 </td>
-                <td style={{ fontSize: 0.8, color: "var(--ink-muted)" }}>
+                <td style={{ fontSize: "0.8rem", color: "var(--ink-muted)" }}>
                   {job.created_at ? new Date(job.created_at).toLocaleString() : "—"}
                 </td>
               </tr>

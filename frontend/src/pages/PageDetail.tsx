@@ -91,7 +91,7 @@ export default function PageDetail() {
 
       <div className="panel-box">
         <span className="eyebrow">Page Information</span>
-        <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10, fontSize: 0.84 }}>
+        <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10, fontSize: "0.84rem" }}>
           <div>
             <strong>Page ID:</strong>
             <span className="mono-label">{pageId}</span>

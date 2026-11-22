@@ -120,7 +120,7 @@ export default function Jobs() {
           <tbody>
             {jobs.map((job) => (
               <tr key={job.job_id}>
-                <td style={{ fontFamily: "var(--font-mono)", fontSize: 0.85 }}>
+                <td style={{ fontFamily: "var(--font-mono)", fontSize: "0.85rem" }}>
                   {job.job_id.slice(0, 8)}…
                 </td>
                 <td>{statusBadge(job.estado)}</td>
@@ -136,12 +136,12 @@ export default function Jobs() {
                       View Result
                     </button>
                   ) : (
-                    <span style={{ color: "var(--ink-muted)", fontSize: 0.85 }}>
+                    <span style={{ color: "var(--ink-muted)", fontSize: "0.85rem" }}>
                       {job.estado === "failed" ? "Failed" : "Pending"}
                     </span>
                   )}
                 </td>
-                <td style={{ fontSize: 0.85, color: "var(--ink-muted)" }}>
+                <td style={{ fontSize: "0.85rem", color: "var(--ink-muted)" }}>
                   {job.created_at ? new Date(job.created_at).toLocaleString() : "—"}
                 </td>
               </tr>

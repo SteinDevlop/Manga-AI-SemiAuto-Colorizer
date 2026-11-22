@@ -8,18 +8,21 @@ from __future__ import annotations
 
 import hashlib
 import io
+import mimetypes
 import tempfile
 from pathlib import Path
 from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Path as PathParam, UploadFile, status
+from fastapi.responses import FileResponse
 from PIL import Image
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.use_cases.create_page import CreatePageInput, CreatePageUseCase
 from app.core.config import get_settings
-from app.core.exceptions import NotFoundError
+from app.core.exceptions import NotFoundError, ForbiddenError
+from app.core.exceptions import AppError
 from app.core.logging import get_logger
 from app.infrastructure.database.session import get_session
 from app.infrastructure.storage.service import StorageService
@@ -99,29 +102,39 @@ async def upload_page(
 
         # Check for duplicate page hash BEFORE persisting to DB.
         existing = await page_repo.get_by_hash(hash_sha256=hash_sha256)
+        allow_duplicate_hash = False
         if existing:
-            logger.warning(
-                "Hash duplicado detectado: %s — reutilizando página existente",
-                hash_sha256,
-            )
-            # Clean up the duplicate uploaded file since we won't keep it.
-            try:
-                Path(tmp_path).unlink(missing_ok=True)
-            except Exception:
-                pass
-            return {
-                "id": existing.id,
-                "project_id": existing.project_id,
-                "nombre_archivo_original": existing.nombre_archivo_original,
-                "hash_sha256": existing.hash_sha256,
-                "ruta_archivo": existing.ruta_archivo,
-                "mime_type": existing.mime_type,
-                "ancho": existing.ancho,
-                "alto": existing.alto,
-                "tamano_bytes": existing.tamano_bytes,
-                "estado": existing.estado,
-                "created_at": existing.created_at,
-            }
+            if str(existing.project_id) == project_id:
+                # Misma imagen, mismo proyecto: retornar la existente (evitar duplicado real).
+                logger.warning(
+                    "Hash duplicado detectado para el mismo proyecto: %s — reutilizando página existente",
+                    hash_sha256,
+                )
+                # Clean up the duplicate uploaded file since we won't keep it.
+                try:
+                    Path(tmp_path).unlink(missing_ok=True)
+                except Exception:
+                    pass
+                return {
+                    "id": existing.id,
+                    "project_id": existing.project_id,
+                    "nombre_archivo_original": existing.nombre_archivo_original,
+                    "hash_sha256": existing.hash_sha256,
+                    "ruta_archivo": existing.ruta_archivo,
+                    "mime_type": existing.mime_type,
+                    "ancho": existing.ancho,
+                    "alto": existing.alto,
+                    "tamano_bytes": existing.tamano_bytes,
+                    "estado": existing.estado,
+                    "created_at": existing.created_at,
+                }
+            else:
+                # Misma imagen, proyecto diferente: crear una página nueva para este proyecto.
+                logger.warning(
+                    "Hash duplicado para proyecto diferente: %s — creando página nueva para %s",
+                    hash_sha256, project_id,
+                )
+                allow_duplicate_hash = True
 
         # Store the original page image (only if hash is new).
         saved = storage.save(
@@ -142,6 +155,7 @@ async def upload_page(
                 ancho=None,
                 alto=None,
                 tamano_bytes=saved["tamano_bytes"],
+                allow_duplicate_hash=allow_duplicate_hash,
             )
         )
 
@@ -168,9 +182,11 @@ async def upload_page(
                 except Exception:
                     pass
                 thumbnail_url = preview["ruta_archivo"]
-                project_repo.update(
+                await project_repo.update(
                     UUID(project_id), cover_image=thumbnail_url
                 )
+        except AppError:
+            raise
         except Exception as exc:  # pragma: no cover - thumbnail is best effort
             logger.warning("No se pudo generar la miniatura: %s", exc)
 
@@ -193,6 +209,8 @@ async def upload_page(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=exc.message,
         )
+    except AppError:
+        raise
     except Exception as exc:  # pragma: no cover - infra failure path
         logger.exception("Error al subir página: %s", exc)
         raise HTTPException(
@@ -241,9 +259,29 @@ async def list_pages(
         ]
     except HTTPException:
         raise
+    except AppError:
+        raise
     except Exception as exc:  # pragma: no cover - infra failure path
         logger.exception("Error al listar páginas del proyecto %s: %s", project_id, exc)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error interno al listar páginas.",
         )
+
+@router.get("/{page_id}/content")
+async def get_page_content(
+    page_id: UUID,
+    session: AsyncSession = Depends(get_session),
+) -> FileResponse:
+    """Serve the original page image to authenticated clients for character previews."""
+    page = await PageRepository(session).get(page_id)
+    if page is None:
+        raise NotFoundError("Page not found.")
+    path = Path(page.ruta_archivo).resolve()
+    storage_root = Path(get_settings().STORAGE_ROOT).resolve()
+    if not path.is_relative_to(storage_root):
+        raise ForbiddenError("Page path is outside the configured storage directory.")
+    if not path.is_file():
+        raise NotFoundError("Page image not found.")
+    media_type = mimetypes.guess_type(path.name)[0] or page.mime_type or "application/octet-stream"
+    return FileResponse(path, media_type=media_type, filename=path.name)

@@ -1,11 +1,13 @@
 """Mock character detector adapter.
 
-Implements the ``CharacterDetector`` protocol with fixed, fictional results.
-No heavy inference is executed in this phase (the real model lands in P8).
+Implements the ``CharacterDetector`` protocol with variable fictional results
+derived from the image content hash. No heavy inference is executed in this
+phase (the real model lands in P8).
 """
 
 from __future__ import annotations
 
+import hashlib
 from typing import TypedDict
 
 
@@ -23,12 +25,10 @@ class CharacterDetection(TypedDict):
 class MockCharacterDetector:
     """Mock implementation of :class:`CharacterDetector`.
 
-    Returns 1-2 fictional character appearances with bounding boxes and
-    fixed confidence. The ``min_confidence`` argument is accepted for
-    protocol compatibility; the mock always returns the same fixed results.
+    Returns 1-3 fictional character appearances with bounding boxes.
+    Position and size are derived deterministically from the image path hash,
+    simulating varied detection results without requiring a real model.
     """
-
-    FIXED_CONFIDENCE: float = 0.88
 
     def detect(
         self,
@@ -39,29 +39,41 @@ class MockCharacterDetector:
         """Return fictional character appearances for the given image.
 
         Args:
-            image_path: Path to the image (unused by the mock).
+            image_path: Path to the image. The hash of this path seeds
+                deterministic but varied bounding box results.
             min_confidence: Minimum confidence threshold (unused by the mock).
 
         Returns:
-            A list of 1-2 fictional character appearances with bounding
-            boxes and fixed confidence.
+            A list of 1-3 fictional character appearances with bounding
+            boxes and varying confidence. Each run with the same image path
+            returns identical results.
         """
-        del image_path, min_confidence
-        return [
-            CharacterDetection(
-                x=120,
-                y=200,
-                ancho=90,
-                alto=160,
-                confianza=self.FIXED_CONFIDENCE,
-                etiqueta="personaje",
-            ),
-            CharacterDetection(
-                x=450,
-                y=180,
-                ancho=80,
-                alto=150,
-                confianza=0.85,
-                etiqueta="personaje",
-            ),
-        ]
+        del min_confidence
+        # Seed deterministic variation from image path hash
+        h = int(hashlib.md5(image_path.encode()).hexdigest()[:8], 16)
+        n = 1 + (h % 3)  # 1, 2, or 3 detections
+
+        results: list[CharacterDetection] = []
+        img_w, img_h = 800, 1000  # assumed page size; adapt if needed
+
+        for i in range(n):
+            # Spread detections across the page using hash-derived values
+            x = ((h >> (8 * i)) % (img_w - 200)) + 50
+            y = ((h >> (8 * (i + 1))) % (img_h - 300)) + 50
+            w = 150 + (h % (img_w - 300))
+            hh = 200 + (h % (img_h - 400))
+            # Clamp to image bounds
+            x = max(0, min(x, img_w - w - 10))
+            y = max(0, min(y, img_h - hh - 10))
+            conf = 0.5 + (h % 100) / 200.0  # 0.5..1.49
+            results.append(
+                CharacterDetection(
+                    x=x,
+                    y=y,
+                    ancho=w,
+                    alto=hh,
+                    confianza=round(conf, 2),
+                    etiqueta="personaje",
+                )
+            )
+        return results

@@ -72,7 +72,7 @@ export default function Analysis() {
         </div>
       </div>
 
-      {error && <p style={{ color: "#c0392b", fontSize: 0.85, margin: "8px 0" }}>Error: {error}</p>}
+      {error && <p style={{ color: "#c0392b", fontSize: "0.85rem", margin: "8px 0" }}>Error: {error}</p>}
 
       {analysis && (
         <div className="grid-3" style={{ marginTop: 20 }}>

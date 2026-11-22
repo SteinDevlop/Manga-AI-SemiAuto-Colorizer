@@ -1,6 +1,18 @@
+import logging
 from functools import lru_cache
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings
+
+_log = logging.getLogger(__name__)
+
+# Valores por defecto que NUNCA deben llegar a producción.
+# Valor por defecto SOLO para desarrollo local (>=32 bytes para no disparar avisos de PyJWT).
+DEV_SECRET_KEY = "dev-only-insecure-secret-key-do-not-use-in-production"
+_INSECURE_SECRET_KEYS = frozenset(
+    {"", "dev-secret-change-in-production", DEV_SECRET_KEY, "changeme", "secret", "change-me"}
+)
+_MIN_SECRET_KEY_LENGTH = 32  # HS256 requiere una clave de al menos 256 bits
 
 
 class Settings(BaseSettings):
@@ -18,16 +30,29 @@ class Settings(BaseSettings):
     CELERY_BROKER_URL: str = "redis://localhost:6379/0"
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/0"
 
-    # Seguridad
-    SECRET_KEY: str = "dev-secret-change-in-production"
+    # Entorno de ejecución: "development" | "test" | "production".
+    # En producción la configuración insegura aborta el arranque (fail-fast).
+    ENVIRONMENT: str = "development"
+
+    # Seguridad (autenticación JWT con flujo OAuth2 de contraseña)
+    SECRET_KEY: str = DEV_SECRET_KEY
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    # Usuario inicial opcional: si ambas variables están definidas y la tabla
+    # de usuarios está vacía, se crea al arrancar la API. Sin ellas, usar
+    # ``python -m app.cli create-user``.
+    FIRST_ADMIN_EMAIL: str = ""
+    FIRST_ADMIN_PASSWORD: str = ""
+
+    # CORS: orígenes permitidos del frontend, separados por coma.
+    CORS_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173"
 
     # Almacenamiento local
     STORAGE_ROOT: str = "./data"
 
     # Subida de archivos
-    MAX_UPLOAD_BYTES: int = 50 * 1024 * 1024  # 50 MB por defecto
+    MAX_UPLOAD_BYTES: int = 50 * 1024 * 1024  # 50 MB por defecto para páginas
+    MAX_MODEL_UPLOAD_BYTES: int = 500 * 1024 * 1024  # 500 MB para archivos de modelo (.pt/.onnx)
 
     # Cifrado de secretos (S17): clave base para Fernet. En producción debe
     # definirse mediante variable de entorno ENCRYPTION_KEY.
@@ -37,6 +62,40 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
         extra = "ignore"
+
+    @property
+    def is_production(self) -> bool:
+        return self.ENVIRONMENT.strip().lower() in {"production", "prod"}
+
+    @model_validator(mode="after")
+    def _validate_security(self) -> "Settings":
+        """Aborta el arranque en producción con secretos débiles o ausentes.
+
+        En desarrollo/pruebas solo emite advertencias para no frenar el flujo
+        local; en producción la API no debe iniciar con claves de ejemplo.
+        """
+        problems: list[str] = []
+        if self.SECRET_KEY in _INSECURE_SECRET_KEYS or len(self.SECRET_KEY) < _MIN_SECRET_KEY_LENGTH:
+            problems.append(
+                f"SECRET_KEY debe definirse con al menos {_MIN_SECRET_KEY_LENGTH} caracteres "
+                "aleatorios (ej.: python -c \"import secrets; print(secrets.token_urlsafe(48))\")"
+            )
+        if not self.ENCRYPTION_KEY:
+            problems.append(
+                "ENCRYPTION_KEY debe definirse (Fernet; ej.: python -c \"from "
+                "cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\"). "
+                "Sin ella las claves de API de modelos se cifran con una clave derivada pública."
+            )
+        if self.ALGORITHM not in {"HS256", "HS384", "HS512"}:
+            problems.append("ALGORITHM debe ser HS256, HS384 o HS512")
+        if problems:
+            if self.is_production:
+                raise ValueError(
+                    "Configuración insegura para ENVIRONMENT=production: " + "; ".join(problems)
+                )
+            for problem in problems:
+                _log.warning("Configuración insegura (solo permitida fuera de producción): %s", problem)
+        return self
 
 
 @lru_cache

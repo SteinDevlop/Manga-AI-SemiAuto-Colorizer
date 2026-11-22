@@ -21,6 +21,7 @@ import asyncio
 import time
 from datetime import datetime, timezone
 from typing import Any
+from uuid import UUID
 
 from app.ai_engine.adapters.real.colorization_engine import (
     ModelUnavailableError,
@@ -112,6 +113,24 @@ async def _fetch_job(job_id: str) -> Any:
     async with async_session() as session:
         repo = ColorizationJobRepository(session)
         return await repo.get(job_id)
+
+
+async def _fetch_colorization_model(model_id: str) -> Any:
+    """Resolve an active colorization manifest selected when the job was created."""
+    from app.modules.model_registry.repositories import ModelManifestRepository
+    async with async_session() as session:
+        manifest = await ModelManifestRepository(session).get(manifest_id=UUID(model_id))
+        if manifest is None or not manifest.is_active:
+            raise NotFoundError(message="El modelo seleccionado ya no existe o está inactivo.")
+        if (manifest.familia or "").strip().lower() not in {"colorizacion", "colorización", "colorization"}:
+            raise ConflictError(message="El modelo seleccionado no pertenece a la tarea de colorización.")
+        if manifest.formato not in {"pt", "onnx"} or not (manifest.capacidades or {}).get("ruta_archivo"):
+            raise ConflictError(message="El pipeline de colorización requiere un modelo local (.pt o .onnx) registrado.")
+        return {
+            "path": manifest.capacidades["ruta_archivo"],
+            "version": manifest.version,
+            "formato": manifest.formato,
+        }
 
 
 async def _update_job(
@@ -389,6 +408,7 @@ def colorize_page(
     job_id: str,
     analysis_id: str,
     palette: dict[str, Any] | None = None,
+    model_id: str | None = None,
 ) -> dict[str, Any]:
     """Colorize a page conditioned on an analysis (GPU).
 
@@ -439,6 +459,15 @@ def colorize_page(
             details={"job_id": job_id, "state": current_state},
         )
 
+    # Resolve the exact registry model chosen by the user; never silently fall back.
+    if not model_id:
+        raise ConflictError(message="No se indicó un modelo del Model Registry para esta colorización.")
+    try:
+        selected_model = _run_async(_fetch_colorization_model(model_id))
+    except Exception as exc:
+        _run_async(_update_job(job_id, estado="failed", mensaje=str(exc)))
+        raise
+
     # Mark the job as actively colorizing.
     try:
         _run_async(
@@ -447,9 +476,11 @@ def colorize_page(
                 estado="colorizing",
                 progreso=0,
                 mensaje="Starting colorization",
+                version_modelo=selected_model["version"],
                 parametros={
                     "analysis_id": analysis_id,
                     "palette": palette or {},
+                    "model_id": model_id,
                 },
             )
         )
@@ -470,9 +501,15 @@ def colorize_page(
             details={"job_id": job_id, "error": str(exc)},
         ) from exc
 
-    # Run real inference with the local U-Net (CPU).
-    engine = RealColorizationEngine()
+    # Run real inference with the local U-Net (CPU) or ONNX model.
+    engine = RealColorizationEngine(
+        checkpoint_path=selected_model["path"],
+        model_version=selected_model["version"],
+        model_format=selected_model.get("formato", "pt"),
+    )
     try:
+        # Pasar los inputs opcionales SAM y WD14 al engine
+        # Estos se pondrán None por defecto y el engine los rellenará con ceros
         engine_result = engine.colorize(
             image_path=image_path,
             mask_references=[],

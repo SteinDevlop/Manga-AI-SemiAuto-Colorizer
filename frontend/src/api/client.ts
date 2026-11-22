@@ -1,46 +1,96 @@
 /** Cliente HTTP ligero para la API del backend (/api/v1).
  *
- * Usa fetch nativo. Toda respuesta de error se convierte en una excepción
- * con el envelope de errores del backend (code/message/details/request_id).
+ * Usa fetch nativo con timeout y reintentos de sesión. Toda respuesta de
+ * error se convierte en una excepción con el envelope de errores del
+ * backend (code/message/details/request_id).
  */
 
 import type { ApiError } from "../types";
+import { authToken } from "./auth";
 
-export const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
+export const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000/api/v1";
+
+/** Tiempo máximo de espera para cada petición (ms). Evita que la UI se quede
+ * colgada para siempre si el backend no responde. */
+const REQUEST_TIMEOUT_MS = 15000;
 
 async function request<T>(
   input: RequestInfo | URL,
   init?: RequestInit,
 ): Promise<T> {
-  const res = await fetch(input, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
-    ...init,
-  });
+  // Content-Type solo cuando hay cuerpo JSON: en GET provocaría un preflight
+  // CORS (OPTIONS) innecesario en cada petición. FormData fija su boundary.
+  const hasJsonBody = typeof init?.body === "string";
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
-  if (!res.ok) {
-    let error: ApiError = {
-      code: "http_error",
-      message: `HTTP ${res.status}`,
-    };
-    try {
-      error = (await res.json()) as ApiError;
-    } catch {
-      // Ignorar si el cuerpo no es JSON.
+  try {
+    const res = await fetch(input, {
+      ...init,
+      signal: controller.signal,
+      headers: {
+        ...(hasJsonBody ? { "Content-Type": "application/json" } : {}),
+        ...(authToken.get() ? { Authorization: `Bearer ${authToken.get()}` } : {}),
+        ...(init?.headers ?? {}),
+      },
+    });
+
+    if (res.status === 401 && authToken.get()) {
+      authToken.clear();
+      if (typeof window !== "undefined") window.dispatchEvent(new Event("sumi:unauthorized"));
     }
-    throw new Error(error.message, { cause: error });
-  }
 
-  if (res.status === 204) {
-    return undefined as T;
-  }
+    if (!res.ok) {
+      let error: ApiError = {
+        code: "http_error",
+        message: `HTTP ${res.status}`,
+      };
+      try {
+        const body = await res.json();
+        const d = body?.detail && typeof body.detail === "object" ? body.detail : body;
+        error = {
+          code: d?.code ?? "http_error",
+          message: typeof d?.message === "string" ? d.message : typeof body?.detail === "string" ? body.detail : `HTTP ${res.status}`,
+          details: d?.details,
+          request_id: d?.request_id,
+        } as ApiError;
+      } catch {
+        // Ignorar si el cuerpo no es JSON.
+      }
+      throw new Error(error.message, { cause: error });
+    }
 
-  return res.json();
+    if (res.status === 204) {
+      return undefined as T;
+    }
+
+    return res.json();
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new Error("Tiempo de espera agotado al contactar al backend. Verifica que el servidor esté en ejecución.", { cause: err });
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 export const api = {
+  login: async (email: string, password: string) => {
+    const body = new URLSearchParams({ username: email, password });
+    const response = await fetch(`${API_BASE}/auth/token`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body,
+    });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      const detail = payload?.detail;
+      throw new Error(typeof detail?.message === "string" ? detail.message : typeof detail === "string" ? detail : typeof payload?.message === "string" ? payload.message : "No fue posible iniciar sesión.");
+    }
+    return response.json() as Promise<{ access_token: string; token_type: string; expires_in: number }>;
+  },
+  me: () => request<{ id: string; email: string; is_admin: boolean }>(`${API_BASE}/auth/me`),
   get: <T>(path: string) => request<T>(`${API_BASE}${path}`),
   post: <T>(path: string, body?: unknown, init?: RequestInit) =>
     request<T>(`${API_BASE}${path}`, {
@@ -52,12 +102,12 @@ export const api = {
   patch: <T>(path: string, body?: unknown) =>
     request<T>(`${API_BASE}${path}`, {
       method: "PATCH",
-      body: body ? JSON.stringify(body) : undefined,
+      body: body instanceof FormData ? body : (body ? JSON.stringify(body) : undefined),
     }),
   put: <T>(path: string, body?: unknown) =>
     request<T>(`${API_BASE}${path}`, {
       method: "PUT",
-      body: body ? JSON.stringify(body) : undefined,
+      body: body instanceof FormData ? body : (body ? JSON.stringify(body) : undefined),
     }),
   delete: <T>(path: string) =>
     request<T>(`${API_BASE}${path}`, { method: "DELETE" }),
@@ -173,11 +223,47 @@ export const api = {
     request<{ analysis_id: string; estado: string }>(`${API_BASE}/analysis/${analysisId}/approve`, {
       method: "POST",
     }),
-  createColorization: (analysisId: string) =>
-    request<{ job_id: string; analysis_id: string; estado: string; progreso: number; mensaje: string | null }>(
-      `${API_BASE}/colorizations?analysis_id=${encodeURIComponent(analysisId)}`,
+  createColorization: (analysisId: string, modelId?: string) =>
+    request<{ job_id: string; analysis_id: string; estado: string; progreso: number; mensaje: string | null; model_id?: string; version_modelo?: string }>(
+      `${API_BASE}/colorizations?analysis_id=${encodeURIComponent(analysisId)}${modelId ? `&model_id=${encodeURIComponent(modelId)}` : ""}`,
       { method: "POST" }
     ),
   getColorization: (jobId: string) =>
     request<{ job_id: string; analysis_id: string; estado: string; progreso: number; mensaje: string | null; ruta_resultado: string | null; version_modelo: string | null }>(`${API_BASE}/colorizations/${jobId}`),
+  downloadColorization: (jobId: string) => authenticatedBlob(`/colorizations/${jobId}/result`),
+  listModels: (tarea?: string) => request<{ items: any[]; total: number }>(`${API_BASE}/models${tarea ? `?tarea=${encodeURIComponent(tarea)}&activo=true` : "?activo=true"}`),
+  getAnalysisCharacters: (analysisId: string) => request<any>(`${API_BASE}/analysis/${analysisId}/characters`),
+  groupAnalysisIdentities: (analysisId: string) => request<any>(`${API_BASE}/analysis/${analysisId}/group-identities`, { method: "POST" }),
+  listCharacterAppearances: (characterId: string) => request<any>(`${API_BASE}/characters/${characterId}/appearances`),
+  reviewIdentity: (appearanceId: string, characterId: string) => request<any>(`${API_BASE}/appearances/${appearanceId}/identity`, { method: "PATCH", body: JSON.stringify({ character_id: characterId }) }),
+  addCharacterReference: (characterId: string, reference: string) => request<any>(`${API_BASE}/characters/${characterId}/reference`, { method: "PUT", body: JSON.stringify({ referencia_estable: reference }) }),
+  getCharacterMemory: (characterId: string) => request<any>(`${API_BASE}/characters/${characterId}/memory`),
+  updateCharacterMemory: (characterId: string, memory: Record<string, unknown>) => request<any>(`${API_BASE}/characters/${characterId}/memory`, { method: "PATCH", body: JSON.stringify(memory) }),
+  updateCharacterAttribute: (characterId: string, name: string, value: string) => request<any>(`${API_BASE}/characters/${characterId}/attributes/${encodeURIComponent(name)}`, { method: "PATCH", body: JSON.stringify({ valor_sugerido: value }) }),
+  approveCharacterAttribute: (characterId: string, name: string) => request<any>(`${API_BASE}/characters/${characterId}/attributes/${encodeURIComponent(name)}/approve`, { method: "POST" }),
+  updateCharacterPalette: (characterId: string, name: string, hex: string) => request<any>(`${API_BASE}/characters/${characterId}/palettes/${encodeURIComponent(name)}`, { method: "PATCH", body: JSON.stringify({ valor_hex: hex }) }),
+  approveCharacterPalette: (characterId: string, name: string) => request<any>(`${API_BASE}/characters/${characterId}/palettes/${encodeURIComponent(name)}/approve`, { method: "POST" }),
+  getAnalysisMasks: (analysisId: string) => request<any[]>(`${API_BASE}/analysis/${analysisId}/masks`),
+  downloadMask: (maskId: string) => authenticatedBlob(`/masks/${maskId}/content`),
+  downloadPage: (pageId: string) => authenticatedBlob(`/pages/${pageId}/content`),
+  correctMask: (appearanceId: string, corrections: Record<string, unknown>) => request<any>(`${API_BASE}/appearances/${appearanceId}/mask/correct`, { method: "PATCH", body: JSON.stringify({ correcciones: corrections }) }),
+  replaceMask: (appearanceId: string, file: File) => { const body = new FormData(); body.append("file", file); return request<any>(`${API_BASE}/appearances/${appearanceId}/mask/replace`, { method: "PUT", body }); },
+  editMask: (appearanceId: string, tipoMascara: string, file: File) => { const body = new FormData(); body.append("tipo_mascara", tipoMascara); body.append("file", file); return request<any>(`${API_BASE}/appearances/${appearanceId}/mask`, { method: "POST", body }); },
 };
+
+export async function authenticatedBlob(path: string): Promise<Blob> {
+  const response = await fetch(`${API_BASE}${path}`, {
+    headers: authToken.get() ? { Authorization: `Bearer ${authToken.get()}` } : {},
+  });
+  if (response.status === 401 && authToken.get()) {
+    authToken.clear();
+    if (typeof window !== "undefined") window.dispatchEvent(new Event("sumi:unauthorized"));
+  }
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    const detail = payload?.detail;
+    throw new Error(typeof detail?.message === "string" ? detail.message : typeof detail === "string" ? detail : typeof payload?.message === "string" ? payload.message : `HTTP ${response.status}`);
+  }
+  return response.blob();
+}
+

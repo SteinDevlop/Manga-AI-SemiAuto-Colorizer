@@ -9,6 +9,7 @@ beforeEach(() => {
 
 afterEach(() => {
   global.fetch = originalFetch;
+  sessionStorage.clear();
   vi.restoreAllMocks();
 });
 
@@ -21,10 +22,10 @@ describe("api client", () => {
 
     const result = await api.get<typeof data>("/projects");
 
-    expect(global.fetch).toHaveBeenCalledWith(
-      "http://localhost:8000/api/v1/projects",
-      expect.objectContaining({ headers: expect.objectContaining({ "Content-Type": "application/json" }) })
-    );
+    // Un GET no debe enviar Content-Type (evita preflight CORS innecesario).
+    const [url, init] = vi.mocked(global.fetch).mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("http://localhost:8000/api/v1/projects");
+    expect((init.headers as Record<string, string>)["Content-Type"]).toBeUndefined();
     expect(result).toEqual(data);
   });
 
@@ -43,6 +44,14 @@ describe("api client", () => {
         headers: expect.objectContaining({ "Content-Type": "application/json" }),
       })
     );
+  });
+
+  it("adjunta el Bearer token a las peticiones autenticadas", async () => {
+    sessionStorage.setItem("sumi_access_token", "test-token");
+    vi.mocked(global.fetch).mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    await api.get("/projects");
+    const [, init] = vi.mocked(global.fetch).mock.calls[0] as [string, RequestInit];
+    expect((init.headers as Record<string, string>).Authorization).toBe("Bearer test-token");
   });
 
   it("lanza error cuando la respuesta no es OK", async () => {

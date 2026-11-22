@@ -37,10 +37,10 @@ export default function Settings() {
         </div>
       </div>
       <div className="panel-box" style={{ maxWidth: 540 }}>
-        <p style={{ fontSize: 0.9, color: "var(--ink-muted)", marginBottom: 12 }}>
+        <p style={{ fontSize: "0.9rem", color: "var(--ink-muted)", marginBottom: 12 }}>
           Connected to FastAPI backend at <code>{backendUrl}</code> with local artifact storage and Celery worker queues.
         </p>
-        <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 10, fontSize: 0.84 }}>
+        <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 10, fontSize: "0.84rem" }}>
           <div>
             <strong>API Base URL:</strong>
             <span className="mono-label">{API_BASE}</span>

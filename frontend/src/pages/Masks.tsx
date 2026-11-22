@@ -89,7 +89,7 @@ export default function Masks() {
       <div className="page-head">
         <div>
           <span className="eyebrow">05 // Segmentation & Mask Review</span>
-          <h1 className="h1">Mask Editor — Analysis {analysisId.slice(0, 8)}…</h1>
+          <h1 className="h1">Mask Editor — Analysis {(analysisId ?? "").slice(0, 8)}…</h1>
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <button
@@ -145,7 +145,7 @@ export default function Masks() {
                     </div>
                     <span className="dot" style={{ background: "var(--electric)" }} />
                   </div>
-                  <p style={{ fontSize: 0.82, color: "var(--ink-muted)", margin: "4px 0 0 0" }}>
+                  <p style={{ fontSize: "0.82rem", color: "var(--ink-muted)", margin: "4px 0 0 0" }}>
                     {appearance?.character_id ? `Character ${appearance.character_id.slice(0, 8)}…` : "Unknown character"}
                     {mask.ancho && mask.alto ? ` · ${mask.ancho}×${mask.alto}` : ""}
                   </p>
@@ -153,7 +153,7 @@ export default function Masks() {
               )
             })}
           </div>
-          <p style={{ fontSize: 0.82, color: "var(--ink-muted)", margin: "16px 0" }}>
+          <p style={{ fontSize: "0.82rem", color: "var(--ink-muted)", margin: "16px 0" }}>
             Verify segmentation boundaries before locking configuration. You may upload a corrected PNG mask artifact if needed.
           </p>
           <label className="btn btn-outline btn-sm" style={{ width: "100%", justifyContent: "center", cursor: "pointer" }}>

@@ -17,7 +17,10 @@ from app.application.use_cases.create_project import (
     CreateProjectInput,
     CreateProjectUseCase,
 )
+from app.api.deps import get_current_admin
+from app.core.exceptions import AppError
 from app.core.logging import get_logger
+from app.infrastructure.storage.service import public_preview_url
 from app.infrastructure.database.session import get_session
 from app.modules.page_analysis.models import Analysis
 from app.modules.page_analysis.repositories import AnalysisRepository, PageRepository
@@ -68,7 +71,7 @@ async def list_projects(
                 "nombre": p.nombre,
                 "descripcion": p.descripcion,
                 "tipo": None,
-                "portada": p.cover_image,
+                "portada": public_preview_url(p.cover_image),
                 "current_stage": p.current_stage,
                 "status": p.status,
                 "progreso": _progress_percentage(p.stage_progress),
@@ -80,6 +83,8 @@ async def list_projects(
             }
             for p in projects
         ]
+    except AppError:
+        raise
     except Exception as exc:  # pragma: no cover - infra failure path
         logger.exception("Error al listar proyectos: %s", exc)
         raise HTTPException(
@@ -125,11 +130,13 @@ async def create_project(
         }
     except HTTPException:
         raise
+    except AppError:
+        raise
     except Exception as exc:  # pragma: no cover - infra failure path
         logger.exception("Error al crear proyecto: %s", exc)
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=str(exc) or "No se pudo crear el proyecto.",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="No se pudo crear el proyecto.",
         )
 
 
@@ -182,7 +189,7 @@ async def get_project(
             "nombre": project.nombre,
             "descripcion": project.descripcion,
             "tipo": None,
-            "portada": project.cover_image,
+            "portada": public_preview_url(project.cover_image),
             "current_stage": project.current_stage,
             "status": project.status,
             "stage_progress": project.stage_progress or [],
@@ -193,6 +200,8 @@ async def get_project(
         }
     except HTTPException:
         raise
+    except AppError:
+        raise
     except Exception as exc:  # pragma: no cover - infra failure path
         logger.exception("Error al obtener proyecto %s: %s", project_id, exc)
         raise HTTPException(
@@ -201,12 +210,12 @@ async def get_project(
         )
 
 
-@router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(get_current_admin)])
 async def delete_project(
     project_id: str,
     session: AsyncSession = Depends(get_session),
 ) -> None:
-    """Delete a project by its ID."""
+    """Delete a project by its ID. Requires admin privileges."""
     logger.info("Eliminando proyecto: %s", project_id)
     try:
         repo = ProjectRepository(session)
@@ -219,6 +228,8 @@ async def delete_project(
             )
         logger.info("Proyecto eliminado exitosamente: %s", project_id)
     except HTTPException:
+        raise
+    except AppError:
         raise
     except Exception as exc:  # pragma: no cover - infra failure path
         logger.exception("Error al eliminar proyecto: %s", exc)
@@ -378,6 +389,8 @@ async def transition_stage(
             "progreso": _progress_percentage(updated.stage_progress),
         }
     except HTTPException:
+        raise
+    except AppError:
         raise
     except Exception as exc:  # pragma: no cover - infra failure path
         logger.exception("Error al transicionar etapa %s: %s", project_id, exc)

@@ -76,7 +76,12 @@ export default function Dashboard() {
       setDescripcion("");
       navigate(`/projects/${created.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error creando proyecto");
+      const code = (err as { cause?: { code?: string } })?.cause?.code;
+      setError(
+        code === "conflict"
+          ? "Ya existe un proyecto con ese nombre. Elige otro nombre."
+          : err instanceof Error ? err.message : "Error creando proyecto",
+      );
     } finally {
       setCreating(false);
     }
@@ -126,7 +131,7 @@ export default function Dashboard() {
       </div>
 
       {error && (
-        <p style={{ color: "#c0392b", fontSize: 0.85, margin: "8px 0" }}>
+        <p style={{ color: "#c0392b", fontSize: "0.85rem", margin: "8px 0" }}>
           Error: {error}
         </p>
       )}
@@ -161,20 +166,20 @@ export default function Dashboard() {
           </span>
           <div className="summary-strip" style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 32 }}>
             <div className="summary-cell" style={{ flex: 1, minWidth: 160, border: "1px solid var(--border)", padding: 16, borderRadius: 8, background: "var(--surface)" }}>
-              <span className="eyebrow" style={{ display: "block", marginBottom: 6, fontSize: 0.75 }}>Total de proyectos</span>
-              <div className="summary-val" style={{ fontSize: 1.5, fontWeight: 700 }}>{metrics?.total_proyectos ?? 0}</div>
+              <span className="eyebrow" style={{ display: "block", marginBottom: 6, fontSize: "0.75rem" }}>Total de proyectos</span>
+              <div className="summary-val" style={{ fontSize: "1.5rem", fontWeight: 700 }}>{metrics?.total_proyectos ?? 0}</div>
             </div>
             <div className="summary-cell" style={{ flex: 1, minWidth: 160, border: "1px solid var(--border)", padding: 16, borderRadius: 8, background: "var(--surface)" }}>
-              <span className="eyebrow" style={{ display: "block", marginBottom: 6, fontSize: 0.75 }}>Jobs activos</span>
-              <div className="summary-val" style={{ fontSize: 1.5, fontWeight: 700 }}>{metrics?.jobs.activos ?? 0}</div>
+              <span className="eyebrow" style={{ display: "block", marginBottom: 6, fontSize: "0.75rem" }}>Jobs activos</span>
+              <div className="summary-val" style={{ fontSize: "1.5rem", fontWeight: 700 }}>{metrics?.jobs.activos ?? 0}</div>
             </div>
             <div className="summary-cell" style={{ flex: 1, minWidth: 160, border: "1px solid var(--border)", padding: 16, borderRadius: 8, background: "var(--surface)" }}>
-              <span className="eyebrow" style={{ display: "block", marginBottom: 6, fontSize: 0.75 }}>Jobs completados</span>
-              <div className="summary-val" style={{ fontSize: 1.5, fontWeight: 700 }}>{metrics?.jobs.completados ?? 0}</div>
+              <span className="eyebrow" style={{ display: "block", marginBottom: 6, fontSize: "0.75rem" }}>Jobs completados</span>
+              <div className="summary-val" style={{ fontSize: "1.5rem", fontWeight: 700 }}>{metrics?.jobs.completados ?? 0}</div>
             </div>
             <div className="summary-cell" style={{ flex: 1, minWidth: 160, border: "1px solid var(--border)", padding: 16, borderRadius: 8, background: "var(--surface)" }}>
-              <span className="eyebrow" style={{ display: "block", marginBottom: 6, fontSize: 0.75 }}>Jobs fallidos</span>
-              <div className="summary-val" style={{ fontSize: 1.5, fontWeight: 700 }}>{metrics?.jobs.fallidos ?? 0}</div>
+              <span className="eyebrow" style={{ display: "block", marginBottom: 6, fontSize: "0.75rem" }}>Jobs fallidos</span>
+              <div className="summary-val" style={{ fontSize: "1.5rem", fontWeight: 700 }}>{metrics?.jobs.fallidos ?? 0}</div>
             </div>
           </div>
 
@@ -189,7 +194,7 @@ export default function Dashboard() {
               </div>
             ))}
             {!metrics || Object.keys(metrics.proyectos_por_etapa).length === 0 && metrics.total_proyectos === 0 && (
-              <div style={{ border: "1px solid var(--border)", padding: "10px 16px", borderRadius: 8, background: "var(--surface)", color: "var(--ink-muted)", fontSize: 0.85 }}>
+              <div style={{ border: "1px solid var(--border)", padding: "10px 16px", borderRadius: 8, background: "var(--surface)", color: "var(--ink-muted)", fontSize: "0.85rem" }}>
                 Sin proyectos aún.
               </div>
             )}
@@ -222,8 +227,8 @@ export default function Dashboard() {
                   </div>
                   <div style={{ marginTop: 10 }}>
                     <strong style={{ display: "block" }}>{p.nombre}</strong>
-                    <div style={{ display: "flex", gap: 10, alignItems: "center", fontFamily: "var(--font-mono)", fontSize: 0.75, color: "var(--ink-muted)" }}>
-                      <span className={statusBadge(p.status)} style={{ fontSize: 0.7 }}>{p.status}</span>
+                    <div style={{ display: "flex", gap: 10, alignItems: "center", fontFamily: "var(--font-mono)", fontSize: "0.75rem", color: "var(--ink-muted)" }}>
+                      <span className={statusBadge(p.status)} style={{ fontSize: "0.7rem" }}>{p.status}</span>
                       <span>{stageLabel(p.current_stage)}</span>
                       <span>{p.progreso}%</span>
                     </div>

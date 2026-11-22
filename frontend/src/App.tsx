@@ -18,6 +18,9 @@ import Jobs from "./pages/Jobs";
 import Models from "./pages/Models";
 import Settings from "./pages/Settings";
 import { api } from "./api/client";
+import Login from "./pages/Login";
+import { RequireAuth } from "./components/RequireAuth";
+import { AuthProvider } from "./context/AuthContext";
 
 function ProjectIndex() {
   const { id } = useParams<{ id: string }>();
@@ -25,7 +28,7 @@ function ProjectIndex() {
   const [redirected, setRedirected] = useState<boolean>(false);
 
   useEffect(() => {
-    if (redirected) return;
+    if (redirected || !id) return;
     let cancelled = false;
     api.getProject(id)
       .then((p) => {
@@ -34,8 +37,17 @@ function ProjectIndex() {
           setRedirected(true);
         }
       })
-      .catch(() => {
-        if (!cancelled) navigate(`/projects/${id}/upload`, { replace: true });
+      .catch((err) => {
+        if (!cancelled) {
+          // Si la sesión expiró o no hay token, no redirigimos a /upload
+          // (también fallaría con 401). Dejamos que RequireAuth envíe a /login.
+          const isAuth = err?.message?.includes("401") || err?.message?.includes("Autenticación");
+          if (isAuth) {
+            navigate("/login", { replace: true });
+          } else {
+            navigate(`/projects/${id}/upload`, { replace: true });
+          }
+        }
       });
     return () => { cancelled = true; };
   }, [id, redirected, navigate]);
@@ -46,9 +58,11 @@ function ProjectIndex() {
 
 export default function App() {
   return (
+    <AuthProvider>
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Layout />}>
+        <Route path="/login" element={<Login />} />
+        <Route path="/" element={<RequireAuth><Layout /></RequireAuth>}>
           <Route index element={<Home />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="projects" element={<Projects />} />
@@ -62,5 +76,6 @@ export default function App() {
         </Route>
       </Routes>
     </BrowserRouter>
+    </AuthProvider>
   );
 }

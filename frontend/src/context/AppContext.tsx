@@ -7,7 +7,7 @@
  * - currentPage: página actual
  */
 
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useMemo, ReactNode } from "react";
 
 type AppContextType = {
   projectId: string | null;
@@ -28,17 +28,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [jobId, setJobId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<string | null>(null);
 
+  const value = useMemo(
+    () => ({ projectId, setProjectId, analysisId, setAnalysisId, jobId, setJobId, currentPage, setCurrentPage }),
+    [projectId, analysisId, jobId, currentPage],
+  );
+
   return (
-    <AppContext.Provider value={{
-      projectId,
-      setProjectId,
-      analysisId,
-      setAnalysisId,
-      jobId,
-      setJobId,
-      currentPage,
-      setCurrentPage,
-    }}>
+    <AppContext.Provider value={value}>
       {children}
     </AppContext.Provider>
   );

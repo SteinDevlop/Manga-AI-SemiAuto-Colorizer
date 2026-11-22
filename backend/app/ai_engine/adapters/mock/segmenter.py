@@ -1,13 +1,17 @@
 """Mock segmenter adapter.
 
-Implements the ``Segmenter`` protocol with fictional mask artifacts.
-No heavy inference is executed here; the real model lands in P8.
+Implements the ``Segmenter`` protocol with mask artifacts generated from
+character detection regions. No heavy inference is executed in this phase
+(the real model lands in P8).
 """
 
 from __future__ import annotations
 
 import hashlib
-import tempfile
+import os
+
+import cv2
+import numpy as np
 from pathlib import Path
 from typing import TypedDict
 
@@ -26,14 +30,10 @@ class MaskArtifact(TypedDict):
 class MockSegmenter:
     """Mock implementation of :class:`Segmenter`.
 
-    Returns one fictional mask artifact per requested region: a simulated
-    file path and a simulated SHA-256 hash derived deterministically from
-    the image path and region identifier. No image inference is performed.
+    Generates mask artifacts by creating binary masks from the character
+    detection bounding boxes. Each mask is saved as a PNG file so that
+    downstream stages (e.g., colorization hint channels) can consume them.
     """
-
-    DEFAULT_WIDTH: int = 256
-    DEFAULT_HEIGHT: int = 256
-    DEFAULT_MASK_TYPE: str = "personaje"
 
     def segment(
         self,
@@ -41,35 +41,66 @@ class MockSegmenter:
         *,
         regions: list[dict],
     ) -> list[MaskArtifact]:
-        """Return a fictional mask artifact for each requested region.
+        """Return mask artifacts generated from character detection regions.
+
+        For each region a binary mask PNG is created (white rectangle on
+        black background) and saved to a temporary path. The mask covers the
+        full bounding box specified by the region dict.
 
         Args:
-            image_path: Path to the source image. It is only used to seed
-                the simulated hash; no inference is performed on it.
-            regions: Regions to mask. Each entry is a dict that may carry a
-                ``region_id``; a positional id is synthesized otherwise.
+            image_path: Path to the source image. Used only to derive a
+                deterministic temp directory; the actual image is not read.
+            regions: List of region dicts, each expected to contain at least:
+                - ``region_id``: str
+                - ``x``, ``y``, ``ancho``, ``alto``: bounding box in pixels
 
         Returns:
-            A list of mask artifacts, one per input region.
+            A list of mask artifacts, one per input region. Each artifact
+            includes the path to the saved PNG mask file.
         """
-        masks: list[MaskArtifact] = []
-        for index, region in enumerate(regions, start=1):
-            region_id = str(region.get("region_id", f"region-{index}"))
-            digest = hashlib.sha256(f"{image_path}:{region_id}".encode("utf-8")).hexdigest()
+        # Use a deterministic temp dir under the system temp dir
+        tmp_dir = os.path.join("/tmp", "manga_colorizer_masks")
+        os.makedirs(tmp_dir, exist_ok=True)
 
-            # Create a temporary empty PNG file so the storage service can read it.
-            tmp = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
-            tmp.close()
-            Path(tmp.name).touch()
+        # Assumed page size; in a real system this would come from actually
+        # reading the image dimensions.
+        page_h, page_w = 1000, 800
 
-            masks.append(
+        results: list[MaskArtifact] = []
+        for region in regions:
+            region_id = region.get("region_id", f"region-{len(results)}")
+            x = max(0, min(int(region.get("x", 0)), page_w - 1))
+            y = max(0, min(int(region.get("y", 0)), page_h - 1))
+            w_box = max(
+                1,
+                min(int(region.get("ancho", 100)), page_w - x),
+            )
+            hh = max(
+                1,
+                min(int(region.get("alto", 100)), page_h - y),
+            )
+
+            # Create binary mask: white rect on black background
+            mask = np.zeros((page_h, page_w), dtype=np.uint8)
+            mask[y : y + hh, x : x + w_box] = 255
+
+            # Save mask PNG
+            mask_filename = f"{region_id}.png"
+            mask_path = os.path.join(tmp_dir, mask_filename)
+            cv2.imwrite(mask_path, mask)
+
+            # Compute SHA-256 of the mask file content
+            with open(mask_path, "rb") as _f:
+                file_hash = hashlib.sha256(_f.read()).hexdigest()
+
+            results.append(
                 MaskArtifact(
                     region_id=region_id,
-                    ruta_archivo=tmp.name,
-                    hash_sha256=digest,
-                    ancho=self.DEFAULT_WIDTH,
-                    alto=self.DEFAULT_HEIGHT,
-                    tipo_mascara=self.DEFAULT_MASK_TYPE,
+                    ruta_archivo=mask_path,
+                    hash_sha256=file_hash,
+                    ancho=w_box,
+                    alto=hh,
+                    tipo_mascara="character",
                 )
             )
-        return masks
+        return results

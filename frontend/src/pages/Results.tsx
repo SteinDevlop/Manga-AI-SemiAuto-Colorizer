@@ -1,7 +1,7 @@
 /* SUMI Result View — muestra el resultado de colorización de un job específico. */
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { API_BASE } from "../api/client";
+import { api } from "../api/client";
 
 export default function Results() {
   const { jobId } = useParams<{ jobId: string }>();
@@ -9,14 +9,11 @@ export default function Results() {
   const [job, setJob] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [resultUrl, setResultUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!jobId) return;
-    fetch(`${API_BASE}/colorizations/${jobId}`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
+    api.getColorization(jobId)
       .then((data) => {
         setJob(data);
         setLoading(false);
@@ -27,9 +24,18 @@ export default function Results() {
       });
   }, [jobId]);
 
-  const resultUrl = job?.ruta_resultado
-    ? `${API_BASE}/colorizations/${jobId}/result`
-    : null;
+  useEffect(() => {
+    let active = true;
+    let objectUrl: string | null = null;
+    if (job?.estado === "completed" && jobId) {
+      api.downloadColorization(jobId).then(blob => {
+        if (!active) return;
+        objectUrl = URL.createObjectURL(blob);
+        setResultUrl(objectUrl);
+      }).catch(err => { if (active) setError(err instanceof Error ? err.message : "No se pudo cargar la imagen."); });
+    }
+    return () => { active = false; if (objectUrl) URL.revokeObjectURL(objectUrl); };
+  }, [job?.estado, jobId]);
 
   const goBack = () => navigate("/results");
 
@@ -82,7 +88,7 @@ export default function Results() {
 
       <div className="panel-box">
         <span className="eyebrow">Job Details</span>
-        <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10, fontSize: 0.84 }}>
+        <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10, fontSize: "0.84rem" }}>
           <div>
             <strong>Job ID:</strong>
             <span className="mono-label">{job.job_id.slice(0, 8)}…</span>
@@ -121,11 +127,11 @@ export default function Results() {
               alt="Colorized result"
               style={{ maxWidth: "100%", height: "auto", border: "1px solid var(--border)" }}
             />
-            <p style={{ marginTop: 8, fontSize: 0.8, color: "var(--ink-muted)" }}>
+            <p style={{ marginTop: 8, fontSize: "0.8rem", color: "var(--ink-muted)" }}>
               Result:{" "}
-              <a href={resultUrl} target="_blank" rel="noopener noreferrer">
+              <button type="button" className="btn btn-outline btn-sm" onClick={() => { if (resultUrl) window.open(resultUrl, "_blank", "noopener,noreferrer"); }}>
                 Open image in new tab
-              </a>
+              </button>
             </p>
           </div>
         </div>

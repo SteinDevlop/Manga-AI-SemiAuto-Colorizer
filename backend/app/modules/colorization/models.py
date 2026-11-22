@@ -10,7 +10,7 @@ import uuid
 from typing import Optional
 
 from app.infrastructure.database.base import Base
-from sqlalchemy import JSON, ForeignKey, Integer, String
+from sqlalchemy import JSON, Boolean, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
@@ -34,6 +34,8 @@ class MaskArtifact(Base):
     ancho: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     alto: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    corregido: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    correcciones: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     appearance: Mapped["CharacterAppearance"] = relationship("CharacterAppearance")
 

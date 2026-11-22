@@ -4,7 +4,7 @@
 
 # Manga AI SemiAuto Colorizer
 
-**Aplicación local para colorización semiautomática de manga: detecta viñetas, agrupa personajes por identidad, configura paletas cromáticas y genera versiones coloreadas con adaptadores mock (motor generativo pendiente).**
+**Aplicación local para colorización semiautomática de manga: detecta viñetas y personajes, configura paletas y máscaras, y ejecuta inferencia U-Net local con un checkpoint PyTorch registrado.**
 
 [![FastAPI][FastAPI-badge]][FastAPI-url]
 [![React][React-badge]][React-url]
@@ -54,7 +54,7 @@ Todo el procesamiento pesado corre en workers independientes (CPU y GPU); la API
 | Que los resultados no se pierdan al reiniciar | PostgreSQL para metadatos y estados; sistema de archivos para artefactos |
 
 > [!NOTE]
-> **Estado del proyecto.** Backend (FastAPI + SQLAlchemy + Alembic + Celery), frontend (React + TypeScript + Vite), workers, tests, Docker Compose y documentación están implementados. El motor generativo de colorización real es una integración pendiente; los adaptadores mock permiten probar el flujo completo.
+> **Estado del proyecto.** Backend (FastAPI + SQLAlchemy + Alembic + Celery), frontend (React + TypeScript + Vite), autenticación JWT, Model Registry, workers, pruebas y Docker Compose están implementados. El motor de colorización disponible es U-Net local y requiere un checkpoint `.pt` compatible registrado. Los adaptadores mock permiten probar detección/análisis; los formatos ONNX y API aún no están conectados al worker U-Net.
 
 ### A quién está dirigido
 
@@ -90,7 +90,7 @@ Todo el procesamiento pesado corre en workers independientes (CPU y GPU); la API
 ### Alcance y límites
 
 - La aplicación se ejecuta localmente; no requiere servicios cloud en modo normal.
-- No implementa ni entrena el modelo generativo de colorización final; el adaptador de colorización real queda como integración pendiente.
+- No entrena modelos. Ejecuta inferencia con checkpoints U-Net `.pt` compatibles registrados; la inferencia ONNX/API es una integración posterior.
 - No ejecuta inferencia pesada dentro de endpoints HTTP.
 - No almacena imágenes binarias en PostgreSQL; solo metadatos y referencias a artefactos.
 - Los casos de uso no están acoplados a una biblioteca o modelo de IA concreto.
@@ -122,7 +122,7 @@ Esta guía lleva de un repositorio recién clonado a una instancia funcional. Ta
 |---|---|---|
 | Python | 3.11+ | Backend |
 | Docker y Docker Compose | Recientes | PostgreSQL, Redis, API, workers, frontend |
-| Node.js | 18+ | Solo si vas a desarrollar el frontend |
+| Node.js | 20.19+ | Solo si vas a desarrollar el frontend |
 
 ### Instalación y arranque
 
@@ -133,7 +133,12 @@ cd Manga-AI-SemiAuto-Colorizer
 
 # 2. Configuración e infraestructura
 cp docker/.env.example docker/.env
-docker compose up -d
+# Edita docker/.env: define SECRET_KEY y, si usarás modelos API, ENCRYPTION_KEY.
+docker compose --env-file docker/.env -f docker/docker-compose.yml up -d --build
+
+# 3. Crear el primer usuario administrador (se solicita contraseña de forma interactiva)
+docker compose --env-file docker/.env -f docker/docker-compose.yml exec api \
+  python -m app.cli create-user --email admin@example.com --admin
 ```
 
 ### Qué debería estar corriendo
@@ -144,8 +149,8 @@ docker compose up -d
 | Swagger | `http://localhost:8000/api/v1/docs` | Referencia interactiva de la API |
 | ReDoc | `http://localhost:8000/api/v1/redoc` | Referencia de lectura |
 | Frontend (Vite) | `http://localhost:5173` | Interfaz de usuario |
-| PostgreSQL | `localhost:5432` | Metadatos y estados (red interna) |
-| Redis | `localhost:6379` | Broker de Celery y caché (red interna) |
+| PostgreSQL | `localhost:5433` | Metadatos y estados; publicado solo en loopback |
+| Redis | `localhost:6379` | Broker de Celery; publicado solo en loopback |
 
 ### Variables de entorno
 
@@ -156,23 +161,50 @@ Copia `docker/.env.example` a `docker/.env`. Ninguna variable es obligatoria en 
 | `POSTGRES_USER` | `manga` | Usuario de PostgreSQL |
 | `POSTGRES_PASSWORD` | `manga` | Contraseña de PostgreSQL |
 | `POSTGRES_DB` | `manga_colorizer` | Base de datos principal |
-| `DATABASE_URL` | `postgresql+asyncpg://manga:manga@localhost:5432/manga` | Cadena de conexión del backend |
+| `DATABASE_URL` | `postgresql+asyncpg://manga:...@postgres:5432/manga_colorizer` | Cadena de conexión interna de los contenedores; desde el host usa `localhost:5433` |
 | `REDIS_URL` | `redis://localhost:6379/0` | Broker de Celery y caché |
-| `SECRET_KEY` | `dev-secret-change-in-production` | Clave secreta para JWT |
+| `SECRET_KEY` | valor aleatorio de al menos 32 caracteres | Firma de tokens JWT |
+| `ENCRYPTION_KEY` | clave Fernet generada | Cifrado de credenciales de modelos API |
 | `STORAGE_ROOT` | `./data` | Directorio raíz para artefactos |
 
 Nunca subas `.env` al repositorio ni pongas secretos reales en `.env.example`.
 
-### Detener y reiniciar
+### Autenticación y primer acceso
+
+La interfaz redirige a `/login` y protege las rutas de trabajo. No existe registro público. Crea el primer administrador con el comando anterior o configura `FIRST_ADMIN_EMAIL` y `FIRST_ADMIN_PASSWORD` antes del primer arranque. El token se conserva en `sessionStorage` durante la sesión del navegador y se envía como `Authorization: Bearer ...`; las descargas y vistas de resultados también se solicitan con ese encabezado.
+
+Para crear usuarios adicionales, ejecuta el mismo comando `create-user` sin `--admin`.
+
+### Docker Compose: operación
+
+Ejecuta los comandos desde la raíz del repositorio. La ruta explícita al archivo Compose es necesaria porque vive en `docker/`.
 
 ```sh
-docker compose stop         # detiene; conserva datos
-docker compose down         # elimina contenedores; conserva volúmenes
-docker compose down -v      # elimina todo, incluidos los datos locales
-docker compose restart api  # reinicia solo la API
-docker compose restart worker-cpu  # reinicia solo el worker CPU
-docker compose restart worker-gpu  # reinicia solo el worker GPU
+# Arrancar o reconstruir imágenes
+ docker compose --env-file docker/.env -f docker/docker-compose.yml up -d --build
+
+# Ver estado y logs
+ docker compose --env-file docker/.env -f docker/docker-compose.yml ps
+ docker compose --env-file docker/.env -f docker/docker-compose.yml logs -f api worker-cpu
+
+# Detener sin borrar datos
+ docker compose --env-file docker/.env -f docker/docker-compose.yml stop
+
+# Eliminar contenedores y red; conserva el volumen de PostgreSQL y bind mounts
+ docker compose --env-file docker/.env -f docker/docker-compose.yml down
+
+# Reiniciar servicios concretos
+ docker compose --env-file docker/.env -f docker/docker-compose.yml restart api
+ docker compose --env-file docker/.env -f docker/docker-compose.yml restart worker-cpu
+
+# Solo en hosts NVIDIA con NVIDIA Container Toolkit instalado
+ docker compose --profile gpu --env-file docker/.env -f docker/docker-compose.yml up -d --build
+
+# BORRADO DESTRUCTIVO: elimina también el volumen persistente de PostgreSQL
+ docker compose --env-file docker/.env -f docker/docker-compose.yml down -v
 ```
+
+Los datos persistentes se guardan en el volumen `postgres_data` y en los directorios `docker/data/` y `docker/artifacts/`. El checkpoint de colorización debe estar registrado en Model Registry y ser un `.pt` compatible con el U-Net actual. Los modelos ONNX y API pueden registrarse y probarse, pero el worker U-Net de esta versión todavía no ejecuta esos formatos; la interfaz no los ofrece como modelos compatibles del pipeline.
 
 <p align="right">(<a href="#readme-top">volver arriba</a>)</p>
 

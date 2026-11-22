@@ -20,6 +20,7 @@ from app.application.use_cases.analyze_page import AnalyzePageUseCase
 from app.application.use_cases.approve_analysis import ApproveAnalysisInput, ApproveAnalysisUseCase
 from app.application.use_cases.get_analysis import GetAnalysisInput, GetAnalysisUseCase
 from app.core.exceptions import NotFoundError
+from app.core.exceptions import AppError
 from app.core.logging import get_logger
 from app.infrastructure.database.session import get_session
 from app.infrastructure.storage.service import StorageService
@@ -139,6 +140,8 @@ async def analyze_page(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=exc.message,
         )
+    except AppError:
+        raise
     except Exception as exc:  # pragma: no cover - infra failure path
         logger.exception("Error al analizar página %s: %s", page_id, exc)
         raise HTTPException(
@@ -226,6 +229,8 @@ async def get_analysis(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=exc.message,
         )
+    except AppError:
+        raise
     except Exception as exc:  # pragma: no cover - infra failure path
         logger.exception("Error al obtener análisis %s: %s", analysis_id, exc)
         raise HTTPException(
@@ -265,6 +270,8 @@ async def approve_analysis(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=exc.message,
         )
+    except AppError:
+        raise
     except Exception as exc:  # pragma: no cover - infra failure path
         logger.exception("Error al aprobar análisis %s: %s", analysis_id, exc)
         raise HTTPException(

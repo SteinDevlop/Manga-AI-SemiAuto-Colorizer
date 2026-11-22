@@ -202,7 +202,7 @@ export function Upload() {
             disabled={status === "uploading"}
           />
           {file && (
-            <p style={{ fontSize: 0.82, color: "var(--ink-muted)", marginTop: 4 }}>
+            <p style={{ fontSize: "0.82rem", color: "var(--ink-muted)", marginTop: 4 }}>
               {file.name} · {(file.size / 1024 / 1024).toFixed(2)} MB
             </p>
           )}
@@ -228,14 +228,14 @@ export function Upload() {
           <label htmlFor="project-display" style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>
             Proyecto
           </label>
-          <div id="project-display" style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 14px", border: "1px solid var(--border)", borderRadius: 6, background: "var(--surface)", fontFamily: "var(--font-mono)", fontSize: 0.85 }}>
+          <div id="project-display" style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 14px", border: "1px solid var(--border)", borderRadius: 6, background: "var(--surface)", fontFamily: "var(--font-mono)", fontSize: "0.85rem" }}>
             {project?.nombre ?? projectId}
           </div>
         </div>
 
         {status === "uploading" && (
           <div className="form-field">
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 0.8, color: "var(--ink-muted)", marginBottom: 4 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "var(--ink-muted)", marginBottom: 4 }}>
               <span>Subiendo…</span>
               <span>{progress}%</span>
             </div>

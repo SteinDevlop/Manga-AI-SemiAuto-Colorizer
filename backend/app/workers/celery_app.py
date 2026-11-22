@@ -40,3 +40,18 @@ celery_app.conf.task_routes = {
 # Colas por defecto de workers (sobrescritas por variables de entorno).
 celery_app.conf.worker_cpu_queues = "WORKER_CPU_QUEUES"
 celery_app.conf.worker_gpu_queues = "WORKER_GPU_QUEUES"
+
+# Fallar rápido si el broker no responde (la API no debe colgarse al encolar).
+celery_app.conf.broker_connection_timeout = 2
+celery_app.conf.broker_connection_retry = False
+celery_app.conf.broker_connection_max_retries = 0
+celery_app.conf.broker_transport_options = {
+    "socket_connect_timeout": 2,
+    "socket_timeout": 5,
+    "max_retries": 0,
+}
+celery_app.conf.redis_socket_connect_timeout = 2
+celery_app.conf.redis_socket_timeout = 5
+celery_app.conf.result_backend_transport_options = {
+    "retry_policy": {"timeout": 2.0, "max_retries": 0},
+}

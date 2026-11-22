@@ -9,7 +9,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../../api/client";
 import type { ProjectDetail } from "../../components/ProjectLayout";
 
-export function ExportStage() {
+export function ExportStage({ onComplete }: { onComplete?: () => void }) {
   const { id: projectIdParam } = useParams<{ id: string }>();
   const projectId = projectIdParam ?? "";
   const navigate = useNavigate();
@@ -51,10 +51,14 @@ export function ExportStage() {
       setError("No hay resultado disponible para descargar.");
       return;
     }
-    const base = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
-    // Extraer job_id de la ruta del job (el detalle trae job_id).
     const jobId = job.job_id;
-    window.location.href = `${base}/colorizations/${jobId}/result`;
+    api.downloadColorization(jobId).then(blob => {
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url; anchor.download = `colorized-${jobId}.png`;
+      document.body.appendChild(anchor); anchor.click(); anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }).catch(err => setError(err instanceof Error ? err.message : "No se pudo descargar el resultado."));
   };
 
   const analysisId = project?.pages?.[0]?.analysis_id ?? null;
@@ -91,26 +95,31 @@ export function ExportStage() {
 
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 20 }}>
         <div style={{ border: "1px solid var(--border)", padding: 14, borderRadius: 8, background: "var(--surface)", flex: 1, minWidth: 150 }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 0.72, color: "var(--ink-muted)", display: "block", marginBottom: 4 }}>Estado del job</span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", color: "var(--ink-muted)", display: "block", marginBottom: 4 }}>Estado del job</span>
           <strong>{job?.estado ?? "—"}</strong>
         </div>
         <div style={{ border: "1px solid var(--border)", padding: 14, borderRadius: 8, background: "var(--surface)", flex: 1, minWidth: 150 }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 0.72, color: "var(--ink-muted)", display: "block", marginBottom: 4 }}>analysis_id</span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 0.72, wordBreak: "break-all" }}>{analysisId}</span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", color: "var(--ink-muted)", display: "block", marginBottom: 4 }}>analysis_id</span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", wordBreak: "break-all" }}>{analysisId}</span>
         </div>
       </div>
 
       {done ? (
         <div style={{ border: "1px solid var(--border)", padding: 24, borderRadius: 10, background: "var(--surface)", textAlign: "center", marginBottom: 20 }}>
           <p style={{ marginBottom: 12, color: "var(--ink-muted)" }}>Resultado listo para descargar</p>
-          <button type="button" className="btn-vermilion" onClick={handleDownload}>
-            Descargar resultado
-          </button>
+          <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+            <button type="button" className="btn btn-outline" onClick={handleDownload}>
+              Descargar resultado
+            </button>
+            <button type="button" className="btn-vermilion" onClick={() => onComplete?.()}>
+              Finalizar proyecto →
+            </button>
+          </div>
         </div>
       ) : job ? (
         <div style={{ color: "var(--ink-muted)", textAlign: "center", marginBottom: 20 }}>
           <p>El resultado aún no está disponible (estado: {job.estado}).</p>
-          {job.mensaje && <p style={{ fontSize: 0.85 }}>{job.mensaje}</p>}
+          {job.mensaje && <p style={{ fontSize: "0.85rem" }}>{job.mensaje}</p>}
         </div>
       ) : (
         <div style={{ color: "var(--ink-muted)", textAlign: "center", marginBottom: 20 }}>

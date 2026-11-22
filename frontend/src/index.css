@@ -1504,3 +1504,33 @@ body::before {
 .color-uncertain {
   color: #7a5c00;
 }
+
+
+/* ---- Estilos faltantes (stepper de proyecto, alertas, progreso, formularios) ---- */
+.project-layout { max-width: 1200px; margin: 0 auto; width: 100%; }
+.project-layout .step {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface); color: var(--ink-muted); font-family: var(--font-sans);
+  cursor: default; transition: background .15s, border-color .15s;
+}
+.project-layout .step-done { background: var(--paper-2); color: var(--ink); border-color: var(--border-strong); cursor: pointer; }
+.project-layout .step-done:disabled { cursor: default; }
+.project-layout .step-active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.project-layout .step-pending { opacity: .55; }
+.project-layout .step:disabled { cursor: not-allowed; }
+.project-layout .step-done:not(:disabled):hover { border-color: var(--ink); }
+
+.alert { padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--paper-2); font-size: .9rem; margin: 8px 0; }
+.alert-error { border-color: var(--vermilion); color: #8f1d14; background: #fdeceb; }
+
+.progress-track { width: 100%; height: 8px; background: var(--paper-deep); border-radius: 999px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--vermilion); transition: width .3s ease; }
+
+.form { display: flex; flex-direction: column; gap: 14px; }
+.form-field { display: flex; flex-direction: column; gap: 6px; }
+.form-field input, .form-field select, .form-field textarea {
+  padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); font: inherit;
+}
+.form-actions { display: flex; gap: 10px; justify-content: flex-end; }
+.mask-overlay { position: absolute; inset: 0; pointer-events: none; }

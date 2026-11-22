@@ -20,6 +20,7 @@ All entity, job, and artifact identifiers are UUIDs (version 4 preferred). Ident
 | analysis_id | Analysis | Backend |
 | job_id | ColorizationJob | Backend |
 | model_manifest_id | ModelManifest | Backend / ML engineer |
+| user_id | User | Backend / administrador |
 | request_id | API error / log correlation | Backend (per request) |
 
 ## Regla de análisis vigente (defecto 0.9)

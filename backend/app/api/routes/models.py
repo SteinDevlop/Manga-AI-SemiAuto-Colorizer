@@ -23,6 +23,8 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+
+from app.api.deps import get_current_admin
 from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -36,6 +38,7 @@ from app.application.use_cases.update_model_status import (
 from app.ai_engine.adapters.modelos import resolve_adapter
 from app.core.config import get_fernet, get_settings
 from app.core.exceptions import ConflictError, NotFoundError, ValidationError
+from app.core.exceptions import AppError
 from app.core.logging import get_logger
 from app.infrastructure.database.session import get_session
 from app.infrastructure.storage.service import StorageService
@@ -159,13 +162,17 @@ async def list_models(
         items = [m.to_dict() for m in await repo.list()]
         # Aplicar filtros ligeros en capa de ruta (los casos de uso no filtran).
         if tarea:
-            items = [m for m in items if m["tarea"] == tarea]
+            normalize_task = lambda value: (value or "").strip().lower().replace("ó", "o")
+            requested_task = normalize_task(tarea)
+            items = [m for m in items if normalize_task(m["tarea"]) == requested_task]
         if activo is not None:
             items = [m for m in items if m["is_active"] == activo]
         if formato:
             items = [m for m in items if m["formato"] == formato]
         return {"items": items, "total": len(items)}
     except HTTPException:
+        raise
+    except AppError:
         raise
     except Exception as exc:  # pragma: no cover - infra failure path
         logger.exception("Error al listar modelos: %s", exc)
@@ -195,6 +202,8 @@ async def get_model(
             status_code=status.HTTP_400_BAD_REQUEST, detail="model_id inválido."
         )
     except HTTPException:
+        raise
+    except AppError:
         raise
     except Exception as exc:  # pragma: no cover - infra failure path
         logger.exception("Error al obtener modelo %s: %s", model_id, exc)
@@ -229,7 +238,7 @@ async def get_model(
     return data
 
 
-@router.post("", status_code=status.HTTP_201_CREATED, response_model=dict[str, Any])
+@router.post("", status_code=status.HTTP_201_CREATED, response_model=dict[str, Any], dependencies=[Depends(get_current_admin)])
 async def register_model(
     session: AsyncSession = Depends(get_session),
     source_type: str = Form(...),
@@ -288,7 +297,7 @@ async def register_model(
                     "message": "Se requiere 'file' para source_type='local_file'.",
                 },
             )
-        ext, formato, sha256 = _validate_uploaded_file(file, settings.MAX_UPLOAD_BYTES)
+        ext, formato, sha256 = _validate_uploaded_file(file, settings.MAX_MODEL_UPLOAD_BYTES)
         hash_pesos = sha256
         capacidades["formato"] = formato
         # Almacenar fuera de la carpeta pública (artifact_type "models") (S14).
@@ -319,6 +328,7 @@ async def register_model(
             formato=formato, ruta_archivo=ruta_archivo, model_id=nombre
         )
         capacidades["salud"] = "ok"
+        capacidades["ruta_archivo"] = ruta_archivo
 
     else:  # api
         if not base_url:
@@ -389,6 +399,8 @@ async def register_model(
         )
     except HTTPException:
         raise
+    except AppError:
+        raise
     except Exception as exc:  # pragma: no cover - infra failure path
         logger.exception("Error al registrar modelo %s: %s", nombre, exc)
         raise HTTPException(
@@ -413,7 +425,7 @@ async def register_model(
     }
 
 
-@router.patch("/{model_id}/status", response_model=dict[str, Any])
+@router.patch("/{model_id}/status", response_model=dict[str, Any], dependencies=[Depends(get_current_admin)])
 async def update_model_status(
     model_id: str,
     session: AsyncSession = Depends(get_session),
@@ -456,6 +468,8 @@ async def update_model_status(
         )
     except HTTPException:
         raise
+    except AppError:
+        raise
     except Exception as exc:  # pragma: no cover - infra failure path
         logger.exception("Error al actualizar estado de modelo %s: %s", model_id, exc)
         raise HTTPException(
@@ -472,7 +486,7 @@ async def update_model_status(
     }
 
 
-@router.put("/{model_id}", response_model=dict[str, Any])
+@router.put("/{model_id}", response_model=dict[str, Any], dependencies=[Depends(get_current_admin)])
 async def update_model(
     model_id: str,
     session: AsyncSession = Depends(get_session),
@@ -530,6 +544,8 @@ async def update_model(
             capacidades=capacidades,
             parametros_soportados=parametros_soportados,
         )
+    except AppError:
+        raise
     except Exception as exc:  # pragma: no cover - infra failure path
         logger.exception("Error al editar modelo %s: %s", model_id, exc)
         raise HTTPException(
@@ -556,7 +572,7 @@ async def update_model(
     }
 
 
-@router.delete("/{model_id}")
+@router.delete("/{model_id}", dependencies=[Depends(get_current_admin)])
 async def delete_model(
     model_id: str,
     session: AsyncSession = Depends(get_session),
@@ -597,7 +613,7 @@ async def delete_model(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.post("/{model_id}/test-connection", response_model=dict[str, Any])
+@router.post("/{model_id}/test-connection", response_model=dict[str, Any], dependencies=[Depends(get_current_admin)])
 async def test_connection(
     model_id: str,
     session: AsyncSession = Depends(get_session),

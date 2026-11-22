@@ -9,8 +9,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../../api/client";
 import type { ProjectDetail } from "../../components/ProjectLayout";
 
-export function AnalysisStage() {
-  const { id: projectIdParam } = useParams<{ id: string }>();
+export function AnalysisStage({ onComplete }: { onComplete?: () => void }) {
+  const { id: projectIdParam, stage: stageParam } = useParams<{ id: string; stage: string }>();
   const projectId = projectIdParam ?? "";
   const navigate = useNavigate();
   const [project, setProject] = useState<ProjectDetail | null>(null);
@@ -20,6 +20,7 @@ export function AnalysisStage() {
   const [running, setRunning] = useState(false);
 
   useEffect(() => {
+    if (!projectId) return;
     let cancelled = false;
     setLoading(true);
     api.getProject(projectId)
@@ -38,7 +39,7 @@ export function AnalysisStage() {
         if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [projectId]);
+  }, [projectId, stageParam]);
 
   const loadAnalysis = async (analysisId: string) => {
     try {
@@ -52,27 +53,30 @@ export function AnalysisStage() {
   };
 
   const handleRunAnalysis = async () => {
-    if (!project?.pages?.[0]?.page_id) return;
     setRunning(true);
     setError(null);
     try {
+      // Re-fetch del proyecto para obtener el page_id más actualizado
+      const fresh = await api.getProject(projectId);
+      setProject(fresh);
+      const pageId = fresh.pages?.[0]?.page_id;
+      if (!pageId) {
+        setError("Primero sube una imagen en la etapa de Subida para poder ejecutar el análisis.");
+        setRunning(false);
+        return;
+      }
       // POST /api/v1/analysis/{page_id} — aquí SÍ va page_id (regla 0.9).
-      const data = await (fetch as any)(`${import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1"}/analysis/${project.pages[0].page_id}`, {
-        method: "POST",
-      });
-      const json = await data.json();
+      const json = await api.post<any>(`/analysis/${pageId}`);
       setAnalysis(json);
-      // Refrescar el proyecto para obtener el nuevo analysis_id vigente.
-      const updated = await api.getProject(projectId);
-      setProject(updated);
+      setRunning(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al ejecutar el análisis.");
-    } finally {
       setRunning(false);
     }
   };
 
   const analysisId = analysis?.analysis_id ?? project?.pages?.[0]?.analysis_id ?? null;
+  const puedeContinuar = !!analysis && !!analysis.analysis_id;
 
   if (loading) {
     return (
@@ -110,7 +114,7 @@ export function AnalysisStage() {
           <button
             type="button"
             className="btn-vermilion"
-            disabled={running}
+            disabled={running || analysis || !project}
             onClick={handleRunAnalysis}
           >
             {running ? "Analizando…" : "Ejecutar análisis"}
@@ -122,54 +126,54 @@ export function AnalysisStage() {
         <>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 20 }}>
             <div style={{ border: "1px solid var(--border)", padding: 14, borderRadius: 8, background: "var(--surface)", flex: 1, minWidth: 150 }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 0.72, color: "var(--ink-muted)", display: "block", marginBottom: 4 }}>Estado</span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", color: "var(--ink-muted)", display: "block", marginBottom: 4 }}>Estado</span>
               <strong>{analysis.estado}</strong>
             </div>
             <div style={{ border: "1px solid var(--border)", padding: 14, borderRadius: 8, background: "var(--surface)", flex: 1, minWidth: 150 }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 0.72, color: "var(--ink-muted)", display: "block", marginBottom: 4 }}>Paneles</span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", color: "var(--ink-muted)", display: "block", marginBottom: 4 }}>Paneles</span>
               <strong>{analysis.panels?.length ?? 0}</strong>
             </div>
             <div style={{ border: "1px solid var(--border)", padding: 14, borderRadius: 8, background: "var(--surface)", flex: 1, minWidth: 150 }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 0.72, color: "var(--ink-muted)", display: "block", marginBottom: 4 }}>Personajes</span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", color: "var(--ink-muted)", display: "block", marginBottom: 4 }}>Personajes</span>
               <strong>{analysis.characters?.length ?? 0}</strong>
             </div>
             <div style={{ border: "1px solid var(--border)", padding: 14, borderRadius: 8, background: "var(--surface)", flex: 1, minWidth: 150 }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 0.72, color: "var(--ink-muted)", display: "block", marginBottom: 4 }}>Máscaras</span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", color: "var(--ink-muted)", display: "block", marginBottom: 4 }}>Máscaras</span>
               <strong>{analysis.masks?.length ?? 0}</strong>
             </div>
             <div style={{ border: "1px solid var(--border)", padding: 14, borderRadius: 8, background: "var(--surface)", flex: 1, minWidth: 150 }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 0.72, color: "var(--ink-muted)", display: "block", marginBottom: 4 }}>analysis_id</span>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 0.72, wordBreak: "break-all" }}>{analysisId}</span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", color: "var(--ink-muted)", display: "block", marginBottom: 4 }}>analysis_id</span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", wordBreak: "break-all" }}>{analysisId}</span>
             </div>
           </div>
 
           <div style={{ marginBottom: 20 }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 0.75, color: "var(--ink-muted)", marginBottom: 6, display: "block" }}>Personajes detectados</span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", color: "var(--ink-muted)", marginBottom: 6, display: "block" }}>Personajes detectados</span>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               {analysis.characters?.map((c: any) => (
                 <div key={c.id} style={{ border: "1px solid var(--border)", padding: "8px 12px", borderRadius: 6, background: "var(--surface)", display: "flex", flexDirection: "column", gap: 4, minWidth: 140 }}>
                   <strong>{c.nombre}</strong>
-                  <span style={{ fontSize: 0.75, color: "var(--ink-muted)" }}>confianza {(c.confianza_identidad ?? 0).toFixed(2)}</span>
+                  <span style={{ fontSize: "0.75rem", color: "var(--ink-muted)" }}>confianza {(c.confianza_identidad ?? 0).toFixed(2)}</span>
                 </div>
               ))}
             </div>
           </div>
 
           <div style={{ marginBottom: 20 }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 0.75, color: "var(--ink-muted)", marginBottom: 6, display: "block" }}>Máscaras</span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", color: "var(--ink-muted)", marginBottom: 6, display: "block" }}>Máscaras</span>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               {analysis.masks?.map((m: any) => (
                 <div key={m.id} style={{ border: "1px solid var(--border)", padding: "8px 12px", borderRadius: 6, background: "var(--surface)", display: "flex", flexDirection: "column", gap: 4, minWidth: 140 }}>
                   <strong>{m.tipo_mascara}</strong>
-                  <span style={{ fontSize: 0.75, color: "var(--ink-muted)" }}>{m.appearance_id.slice(0, 6)}…</span>
+                  <span style={{ fontSize: "0.75rem", color: "var(--ink-muted)" }}>{m.appearance_id.slice(0, 6)}…</span>
                 </div>
               ))}
             </div>
           </div>
 
           <div style={{ marginTop: 20, display: "flex", gap: 10 }}>
-            <button type="button" className="btn btn-vermilion" onClick={() => navigate(`/projects/${projectId}/approve`)}>
-              Ir a Aprobación →
+            <button type="button" className="btn btn-vermilion" disabled={!puedeContinuar} onClick={() => onComplete?.()}>
+              Guardar análisis y continuar a personajes →
             </button>
           </div>
         </>

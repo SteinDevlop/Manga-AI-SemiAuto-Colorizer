@@ -1,6 +1,6 @@
 /* SUMI Colorize Center — real inference via local U-Net (F08). */
 import { useState, useEffect } from "react";
-import { API_BASE } from "../api/client";
+import { api } from "../api/client";
 
 const stages = [
   { pct: 10, msg: "Stage: queued — job created" },
@@ -27,15 +27,7 @@ export default function Colorize() {
     setRunning(true);
 
     try {
-      const response = await fetch(
-        `${API_BASE}/colorizations?analysis_id=${encodeURIComponent(analysisId)}`,
-        { method: "POST" }
-      );
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(body.detail || `HTTP ${response.status}`);
-      }
-      const data = await response.json();
+      const data = await api.createColorization(analysisId);
       setJobId(data.job_id);
       setJobStatus(data.estado);
     } catch (err) {
@@ -44,19 +36,14 @@ export default function Colorize() {
     }
   };
 
+  useEffect(() => () => { if (resultUrl) URL.revokeObjectURL(resultUrl); }, [resultUrl]);
+
   // Poll job status while running.
   useEffect(() => {
     if (!running || !jobId) return;
     const timer = setInterval(async () => {
       try {
-        const response = await fetch(`${API_BASE}/colorizations/${jobId}`);
-        if (!response.ok) {
-          clearInterval(timer);
-          setRunning(false);
-          setError(`Failed to fetch job status: HTTP ${response.status}`);
-          return;
-        }
-        const data = await response.json();
+        const data = await api.getColorization(jobId);
         setJobStatus(data.estado);
 
         // Map estado to progress index.
@@ -72,7 +59,8 @@ export default function Colorize() {
         setIdx(nextIdx);
 
         if (estado === "completed") {
-          setResultUrl(`${API_BASE}/colorizations/${jobId}/result`);
+          const blob = await api.downloadColorization(jobId);
+          setResultUrl(URL.createObjectURL(blob));
           clearInterval(timer);
           setRunning(false);
         } else if (estado === "failed") {
@@ -117,7 +105,7 @@ export default function Colorize() {
       </div>
 
       {error && (
-        <p style={{ color: "#c0392b", fontSize: 0.85, margin: "8px 0" }}>
+        <p style={{ color: "#c0392b", fontSize: "0.85rem", margin: "8px 0" }}>
           Error: {error}
         </p>
       )}
@@ -146,7 +134,7 @@ export default function Colorize() {
           />
         </div>
 
-        <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 0.75, color: "var(--ink-muted)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: "0.75rem", color: "var(--ink-muted)" }}>
           <span id="jobStageMsg">
             {idx > 0 ? stages[idx - 1]?.msg : "Stage: Waiting for execution"}
           </span>
@@ -162,14 +150,14 @@ export default function Colorize() {
               alt="Colorized result"
               style={{ maxWidth: "100%", height: "auto", border: "1px solid var(--border)" }}
             />
-            <p style={{ marginTop: 8, fontSize: 0.8, color: "var(--ink-muted)" }}>
-              Result: <a href={resultUrl} target="_blank" rel="noopener noreferrer">Open image</a>
+            <p style={{ marginTop: 8, fontSize: "0.8rem", color: "var(--ink-muted)" }}>
+              Result: <button type="button" className="btn btn-outline btn-sm" onClick={() => resultUrl && window.open(resultUrl, "_blank", "noopener,noreferrer")}>Open image</button>
             </p>
           </div>
         )}
       </div>
 
-      <p style={{ fontSize: 0.8, color: "var(--ink-muted)", marginTop: 16, paddingTop: 12, borderTop: "1px solid var(--border)" }}>
+      <p style={{ fontSize: "0.8rem", color: "var(--ink-muted)", marginTop: 16, paddingTop: 12, borderTop: "1px solid var(--border)" }}>
         Connected to real local U-Net inference via Celery worker. Result served from backend.
       </p>
     </section>

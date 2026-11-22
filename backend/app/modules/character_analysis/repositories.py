@@ -14,6 +14,7 @@ from uuid import UUID
 from app.modules.character_analysis.models import Character, CharacterAppearance
 from sqlalchemy import Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 
 class CharacterRepository:
@@ -98,6 +99,24 @@ class CharacterAppearanceRepository:
             stmt = stmt.where(CharacterAppearance.character_id == character_id)
         result = await self.session.execute(stmt)
         return result.scalars().all()
+
+    async def list_by_page(self, *, page_id: UUID) -> list[CharacterAppearance]:
+        return await self.list(page_id=page_id)
+
+    async def list_by_character(self, *, character_id: UUID) -> list[CharacterAppearance]:
+        stmt: Select = (
+            select(CharacterAppearance)
+            .options(selectinload(CharacterAppearance.page), selectinload(CharacterAppearance.panel))
+            .where(CharacterAppearance.character_id == character_id)
+            .order_by(CharacterAppearance.created_at)
+        )
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def update_character(
+        self, *, appearance_id: UUID, character_id: UUID
+    ) -> CharacterAppearance | None:
+        return await self.update(appearance_id, character_id=character_id)
 
     async def create(self, **kwargs: Any) -> CharacterAppearance:
         """Create and persist a new appearance from the given attributes."""

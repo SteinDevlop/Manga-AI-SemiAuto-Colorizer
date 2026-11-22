@@ -4,15 +4,17 @@
  * Export) vive dentro de cada proyecto. Esta se renderiza bajo
  * /projects/:id/:stage dentro del Layout global.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { api } from "../api/client";
+import { api, API_BASE } from "../api/client";
 import { StagePlaceholder } from "./StagePlaceholder";
 import { Upload } from "../pages/Upload";
 import { AnalysisStage } from "../pages/stages/AnalysisStage";
 import { ApproveStage } from "../pages/stages/ApproveStage";
 import { ColorizeStage } from "../pages/stages/ColorizeStage";
 import { ExportStage } from "../pages/stages/ExportStage";
+import { CharacterStage } from "../pages/stages/CharacterStage";
+import { MaskStage } from "../pages/stages/MaskStage";
 
 export const STAGE_ORDER: string[] = [
   "upload",
@@ -54,7 +56,10 @@ const statusConf: Record<string, { className: string; text: string }> = {
 };
 
 const projectCover = (p: string | null) => {
-  if (p) return p;
+  if (p) {
+    const url = p.startsWith("/files/") ? API_BASE.replace(/\/api\/v1\/?$/, "") + p : p;
+    return url;
+  }
   return "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='260'><rect width='200' height='260' fill='%23efece4'/><rect x='12' y='12' width='176' height='104' fill='%23fff' stroke='%23111' stroke-width='2'/><rect x='12' y='128' width='176' height='120' fill='%23fff' stroke='%23111' stroke-width='2'/></svg>";
 };
 
@@ -81,57 +86,68 @@ export type ProjectDetail = {
 export function ProjectLayout() {
   const { id: projectId, stage: stageParam } = useParams<{ id: string; stage: string }>();
   const navigate = useNavigate();
+  const navigateRef = useRef(navigate);
+  navigateRef.current = navigate;
   const [project, setProject] = useState<ProjectDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [redirectTo, setRedirectTo] = useState<string | null>(null);
+  const [coverCoverError, setCoverCoverError] = useState(false);
+  const [transitioning, setTransitioning] = useState(false);
+  const lastProjectIdRef = useRef<string | null>(null);
 
+  // Efecto 1: cargar proyecto cuando cambie el ID del proyecto o la etapa.
+  // Necesario para que, tras subir una imagen en /upload y navegar a /analysis,
+  // se recargue el proyecto y se vea el page_id recién creado.
   useEffect(() => {
+    if (!projectId) return;
+
     let cancelled = false;
     setLoading(true);
     api.getProject(projectId)
       .then((p) => {
         if (cancelled) return;
         setProject(p);
-        // Redirigir /projects/:id (sin stage) a la etapa actual.
-        if (!stageParam) {
-          setRedirectTo(`/projects/${projectId}/${p.current_stage}`);
-          return;
-        }
-        // Guarda de ruta para /projects/:id/:stage.
-        const currentIdx = STAGE_ORDER.indexOf(p.current_stage);
-        const targetIdx = STAGE_ORDER.indexOf(stageParam);
-        let allowed = false;
-        if (targetIdx === -1) {
-          allowed = false;
-        } else if (stageParam === p.current_stage) {
-          allowed = true;
-        } else if (stageParam === "upload" && p.stage_progress.includes("upload")) {
-          // Upload no es retornable una vez completada.
-          allowed = false;
-        } else if (p.stage_progress.includes(stageParam) && targetIdx < currentIdx) {
-          // Retroceso a etapa completada y previa.
-          allowed = true;
-        }
-        if (!allowed) {
-          setRedirectTo(`/projects/${projectId}/${p.current_stage}`);
-        }
+        lastProjectIdRef.current = projectId;
+        setLoading(false);
       })
       .catch(() => {
         if (!cancelled) {
           setError("No se pudo cargar el proyecto.");
+          setLoading(false);
         }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
   }, [projectId, stageParam]);
 
-  if (redirectTo) {
-    navigate(redirectTo, { replace: true });
-    return null;
-  }
+  // Efecto 2: guardia de ruta y redirección cuando cambie la etapa solicitada
+  // y ya tengamos el proyecto cargado.
+  useEffect(() => {
+    if (!project || !stageParam || !projectId) return;
+
+    const currentIdx = STAGE_ORDER.indexOf(project.current_stage);
+    const targetIdx = STAGE_ORDER.indexOf(stageParam);
+    let allowed = false;
+    if (targetIdx === -1) {
+      allowed = false;
+    } else if (stageParam === project.current_stage) {
+      allowed = true;
+    } else if (stageParam === "upload" && project.stage_progress.includes("upload")) {
+      // Upload no es retornable una vez completada.
+      allowed = false;
+    } else if (project.stage_progress.includes(stageParam) && targetIdx < currentIdx) {
+      // Retroceso a etapa completada y previa.
+      allowed = true;
+    }
+    if (!allowed) {
+      navigateRef.current(`/projects/${projectId}/${project.current_stage}`, { replace: true });
+    }
+  }, [stageParam, projectId, project]);
+
+  // Redirigir /projects/:id (sin stage) a la etapa actual una vez cargado.
+  useEffect(() => {
+    if (!project || stageParam || !projectId) return;
+    navigateRef.current(`/projects/${projectId}/${project.current_stage}`, { replace: true });
+  }, [project, projectId]);
 
   if (loading) {
     return (
@@ -162,24 +178,30 @@ export function ProjectLayout() {
   const isCompleted = (s: string) => progress.includes(s);
   const isPending = (s: string) => !isCompleted(s) && STAGE_ORDER.indexOf(s) > currentIdx;
 
-  const handleComplete = () => {
-    api.transitionStage(projectId, "complete", project.current_stage)
-      .then((updated) => {
-        setProject((prev) => (prev ? { ...prev, ...updated } : prev));
-      })
-      .catch(() => {
-        setError("No se pudo avanzar de etapa.");
-      });
+  const handleComplete = async () => {
+    if (!projectId || transitioning || project.status === "completado") return;
+    setTransitioning(true);
+    setError(null);
+    try {
+      const updated = await api.transitionStage(projectId, "complete", project.current_stage);
+      setProject((prev) => (prev ? { ...prev, ...updated } : prev));
+      navigate(`/projects/${projectId}/${updated.current_stage}`, { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo avanzar de etapa.");
+    } finally {
+      setTransitioning(false);
+    }
   };
 
   const handleRegress = (to: string) => {
+    if (!projectId) return;
     api.transitionStage(projectId, "regress", to)
       .then((updated) => {
         setProject((prev) => (prev ? { ...prev, ...updated } : prev));
         navigate(`/projects/${projectId}/${to}`);
       })
-      .catch(() => {
-        setError("No se pudo retroceder de etapa.");
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : "No se pudo retroceder de etapa.");
       });
   };
 
@@ -189,13 +211,13 @@ export function ProjectLayout() {
     return isCompleted(s) && STAGE_ORDER.indexOf(s) < currentIdx;
   };
 
-  // Mapa de etapa -> componente. Character y Mask reutilizan StagePlaceholder
-  // hasta que la Fase 7 implemente sus pantallas propias.
+  // Mapa de etapa -> componente. Character y Mask consumen sus endpoints HTTP
+  // y muestran la configuración/revisión persistida del análisis.
   const stageComponentMap: Record<string, React.ComponentType<any>> = {
     upload: Upload as any,
     analysis: AnalysisStage,
-    character: StagePlaceholder,
-    mask: StagePlaceholder,
+    character: CharacterStage,
+    mask: MaskStage,
     approve: ApproveStage,
     colorize: ColorizeStage,
     export: ExportStage,
@@ -206,30 +228,28 @@ export function ProjectLayout() {
     <div className="project-layout" style={{ display: "flex", flexDirection: "column", gap: 16, padding: 24 }}>
       {/* Encabezado del proyecto */}
       <header style={{ display: "flex", gap: 16, alignItems: "center", borderBottom: "1px solid var(--border)", paddingBottom: 12 }}>
-        <img src={projectCover(project.portada)} alt="Portada" style={{ width: 72, height: 96, objectFit: "contain", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6 }} />
+        <img
+          src={coverCoverError || !project.portada ? projectCover(null) : projectCover(project.portada)}
+          alt="Portada"
+          onError={() => setCoverCoverError(true)}
+          style={{ width: 72, height: 96, objectFit: "contain", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6 }}
+        />
         <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", gap: 8, alignItems: "center", fontFamily: "var(--font-mono)", fontSize: 0.72, color: "var(--ink-muted)", marginBottom: 4 }}>
-            <span className={statusConf[project.status]?.className || "badge"} style={{ fontSize: 0.68 }}>{statusConf[project.status]?.text || project.status}</span>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", fontFamily: "var(--font-mono)", fontSize: "0.72rem", color: "var(--ink-muted)", marginBottom: 4 }}>
+            <span className={statusConf[project.status]?.className || "badge"} style={{ fontSize: "0.68rem" }}>{statusConf[project.status]?.text || project.status}</span>
             <span>{project.progreso}%</span>
           </div>
-          <h1 style={{ margin: 0, fontSize: 1.25 }}>{project.nombre}</h1>
-          <p style={{ margin: 4, color: "var(--ink-muted)", fontSize: 0.9 }}>
+          <h1 style={{ margin: 0, fontSize: "1.25rem" }}>{project.nombre}</h1>
+          <p style={{ margin: 4, color: "var(--ink-muted)", fontSize: "0.9rem" }}>
             Etapa actual: <strong>{stageLabel(project.current_stage)}</strong> — {STAGE_DESCRIPTION[project.current_stage]}
           </p>
         </div>
-        <button
-          type="button"
-          className="btn btn-vermilion"
-          onClick={handleComplete}
-          disabled={project.status === "completado"}
-        >
-          {project.status === "completado" ? "Completado" : `Marcar {stageLabel(project.current_stage)} como completada`}
-        </button>
+
       </header>
 
       {/* Stepper interno */}
       <section style={{ border: "1px solid var(--border)", borderRadius: 10, padding: 16, background: "var(--surface)" }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 0.75, color: "var(--ink-muted)", marginBottom: 10 }}>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", color: "var(--ink-muted)", marginBottom: 10 }}>
           Flujo del proyecto
         </div>
         <div style={{ display: "flex", gap: 8 }}>
@@ -251,8 +271,8 @@ export function ProjectLayout() {
                 onClick={() => clickable && handleRegress(s)}
                 title={clickable ? `Retroceder a ${stageLabel(s)}` : active ? "Etapa actual" : "Etapa pendiente"}
               >
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 0.65 }}>{i + 1}</span>
-                <span style={{ marginLeft: 6, fontSize: 0.8, fontWeight: active || completed ? 600 : 400 }}>{stageLabel(s)}</span>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.65rem" }}>{i + 1}</span>
+                <span style={{ marginLeft: 6, fontSize: "0.8rem", fontWeight: active || completed ? 600 : 400 }}>{stageLabel(s)}</span>
               </button>
             );
           })}
@@ -260,11 +280,13 @@ export function ProjectLayout() {
       </section>
 
       {/* Contenido de la etapa */}
+      {error && <p role="alert" style={{ color: "#c0392b", margin: 0 }}>{error}</p>}
       <main style={{ flex: 1 }}>
         <StageComponent
           stage={stageParam ?? project.current_stage}
           isCurrent={!(stageParam && stageParam !== project.current_stage)}
           onComplete={handleComplete}
+          transitioning={transitioning}
         />
       </main>
     </div>

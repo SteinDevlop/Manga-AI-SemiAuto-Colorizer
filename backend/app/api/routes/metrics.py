@@ -11,7 +11,9 @@ from typing import Any, Dict, List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import AppError
 from app.core.logging import get_logger
+from app.infrastructure.storage.service import public_preview_url
 from app.infrastructure.database.session import get_session
 from app.modules.colorization.repositories import ColorizationJobRepository
 from app.modules.projects.models import Project
@@ -65,7 +67,7 @@ async def get_metrics(
                 "nombre": p.nombre,
                 "current_stage": p.current_stage,
                 "status": p.status,
-                "portada": p.cover_image,
+                "portada": public_preview_url(p.cover_image),
                 "updated_at": p.updated_at.isoformat() if p.updated_at else None,
             }
             for p in recent
@@ -83,6 +85,8 @@ async def get_metrics(
             },
             "ultimos_proyectos": recent_out,
         }
+    except AppError:
+        raise
     except Exception as exc:  # pragma: no cover - infra failure path
         logger.exception("Error al calcular métricas: %s", exc)
         raise HTTPException(

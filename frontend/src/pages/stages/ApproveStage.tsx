@@ -3,12 +3,12 @@
  * Resumen del análisis para aprobar antes de colorizar. Usa el `analysis_id`
  * vigente del proyecto (defecto 0.9).
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../../api/client";
 import type { ProjectDetail } from "../../components/ProjectLayout";
 
-export function ApproveStage() {
+export function ApproveStage({ onComplete }: { onComplete?: () => void }) {
   const { id: projectIdParam } = useParams<{ id: string }>();
   const projectId = projectIdParam ?? "";
   const navigate = useNavigate();
@@ -17,14 +17,20 @@ export function ApproveStage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [approving, setApproving] = useState(false);
+  const lastProjectIdRef = useRef<string | null>(null);
 
   useEffect(() => {
+    if (!projectId) return;
+    // Evitar re-fetch si ya cargamos este proyecto.
+    if (lastProjectIdRef.current === projectId && project) return;
+
     let cancelled = false;
     setLoading(true);
     api.getProject(projectId)
       .then((p: any) => {
         if (cancelled) return;
         setProject(p);
+        lastProjectIdRef.current = projectId;
         const analysisId = p.pages?.[0]?.analysis_id;
         if (analysisId) {
           api.getAnalysis(analysisId)
@@ -52,8 +58,11 @@ export function ApproveStage() {
     setApproving(true);
     setError(null);
     try {
-      await api.approveAnalysis(analysisId);
-      navigate(`/projects/${projectId}/colorize`);
+      if (analysis.estado !== "APPROVED" && analysis.estado !== "approved") {
+        await api.approveAnalysis(analysisId);
+      }
+      await onComplete?.();
+      setApproving(false);
     } catch (err) {
       setApproving(false);
       setError(err instanceof Error ? err.message : "Error al aprobar el análisis.");
@@ -90,30 +99,30 @@ export function ApproveStage() {
 
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 20 }}>
         <div style={{ border: "1px solid var(--border)", padding: 14, borderRadius: 8, background: "var(--surface)", flex: 1, minWidth: 150 }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 0.72, color: "var(--ink-muted)", display: "block", marginBottom: 4 }}>Estado análisis</span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", color: "var(--ink-muted)", display: "block", marginBottom: 4 }}>Estado análisis</span>
           <strong>{analysis.estado}</strong>
         </div>
         <div style={{ border: "1px solid var(--border)", padding: 14, borderRadius: 8, background: "var(--surface)", flex: 1, minWidth: 150 }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 0.72, color: "var(--ink-muted)", display: "block", marginBottom: 4 }}>Personajes</span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", color: "var(--ink-muted)", display: "block", marginBottom: 4 }}>Personajes</span>
           <strong>{analysis.characters?.length ?? 0}</strong>
         </div>
         <div style={{ border: "1px solid var(--border)", padding: 14, borderRadius: 8, background: "var(--surface)", flex: 1, minWidth: 150 }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 0.72, color: "var(--ink-muted)", display: "block", marginBottom: 4 }}>Máscaras</span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", color: "var(--ink-muted)", display: "block", marginBottom: 4 }}>Máscaras</span>
           <strong>{analysis.masks?.length ?? 0}</strong>
         </div>
         <div style={{ border: "1px solid var(--border)", padding: 14, borderRadius: 8, background: "var(--surface)", flex: 1, minWidth: 150 }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 0.72, color: "var(--ink-muted)", display: "block", marginBottom: 4 }}>analysis_id</span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 0.72, wordBreak: "break-all" }}>{analysis.analysis_id}</span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", color: "var(--ink-muted)", display: "block", marginBottom: 4 }}>analysis_id</span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", wordBreak: "break-all" }}>{analysis.analysis_id}</span>
         </div>
       </div>
 
       <div style={{ marginBottom: 20 }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 0.75, color: "var(--ink-muted)", marginBottom: 6, display: "block" }}>Resumen para aprobar</span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", color: "var(--ink-muted)", marginBottom: 6, display: "block" }}>Resumen para aprobar</span>
         <ul style={{ listStyle: "none", padding: 0, margin: 0, maxWidth: 560 }}>
           {analysis.characters?.map((c: any) => (
-            <li key={c.id} style={{ borderBottom: "1px solid var(--border)", padding: "10px 0", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 0.9 }}>
+            <li key={c.id} style={{ borderBottom: "1px solid var(--border)", padding: "10px 0", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.9rem" }}>
               <span>{c.nombre}</span>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 0.75, color: "var(--ink-muted)" }}>{((c.confianza_identidad ?? 0) * 100).toFixed(0)}% confianza</span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", color: "var(--ink-muted)" }}>{((c.confianza_identidad ?? 0) * 100).toFixed(0)}% confianza</span>
             </li>
           ))}
           {analysis.characters?.length === 0 && (
@@ -134,10 +143,10 @@ export function ApproveStage() {
         <button
           type="button"
           className="btn-vermilion"
-          disabled={approving || analysis.estado !== "APPROVED" && analysis.estado !== "approved"}
+          disabled={approving}
           onClick={handleApprove}
         >
-          {approving ? "Aprobando…" : "Aprobar análisis y continuar a Colorizar"}
+          {approving ? "Aprobando…" : (analysis.estado === "APPROVED" || analysis.estado === "approved" ? "Continuar a Colorizar →" : "Aprobar análisis y continuar a Colorizar")}
         </button>
       </div>
     </section>

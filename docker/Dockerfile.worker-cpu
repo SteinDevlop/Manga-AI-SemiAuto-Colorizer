@@ -19,22 +19,21 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential libpq-dev curl ca-certificates \
-    && pip install --no-cache-dir psycopg2-binary \
     && rm -rf /var/lib/apt/lists/*
 
 COPY backend/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
-    pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu && \
-    pip install --no-cache-dir opencv-python-headless numpy Pillow python-multipart
+    pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
 
 COPY backend/ ./backend
 
 # Copiar código ML necesario para la inferencia (el volumen ./ml no sincroniza en Windows).
 COPY ml/models/ /app/ml/models/
 
-# Copiar checkpoint entrenado (el volumen ./artifacts/checkpoints no sincroniza en Windows).
-COPY artifacts/checkpoints/sumi_unet_cpu_v1/best.pt /app/artifacts/checkpoints/sumi_unet_cpu_v1/best.pt
+# Los checkpoints se montan desde docker/artifacts/checkpoints en Compose.
+# No copiar pesos al construir: el Model Registry administra los modelos y el
+# repositorio puede no incluir checkpoints entrenados.
 
 WORKDIR /app/backend
 

@@ -38,6 +38,7 @@ export type Character = {
   nombre: string;
   descripcion?: string;
   confianza_identidad?: number;
+  attributes?: CharacterAttribute[];
   created_at: string;
   updated_at: string;
 };
@@ -78,6 +79,8 @@ export type Appearance = {
   panel_id?: string;
   confianza_deteccion?: number;
 };
+
+export type CharacterAppearance = Appearance;
 
 export type Mask = {
   id: string;

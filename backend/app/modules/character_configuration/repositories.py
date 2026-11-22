@@ -41,6 +41,14 @@ class CharacterAttributeRepository:
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
+    async def get_by_character_and_name(self, *, character_id: UUID, nombre_atributo: str) -> CharacterAttribute | None:
+        stmt = select(CharacterAttribute).where(
+            CharacterAttribute.character_id == character_id,
+            CharacterAttribute.nombre_atributo == nombre_atributo,
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def create(self, **kwargs: Any) -> CharacterAttribute:
         """Create and persist a new attribute from the given attributes."""
         attribute = CharacterAttribute(**kwargs)
@@ -101,6 +109,14 @@ class CharacterPaletteRepository:
             stmt = stmt.where(CharacterPalette.character_id == character_id)
         result = await self.session.execute(stmt)
         return result.scalars().all()
+
+    async def get_by_character_and_name(self, *, character_id: UUID, nombre_color: str) -> CharacterPalette | None:
+        stmt = select(CharacterPalette).where(
+            CharacterPalette.character_id == character_id,
+            CharacterPalette.nombre_color == nombre_color,
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
 
     async def create(self, **kwargs: Any) -> CharacterPalette:
         """Create and persist a new palette entry from the given attributes."""

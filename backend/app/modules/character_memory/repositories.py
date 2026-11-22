@@ -36,6 +36,11 @@ class CharacterMemoryRepository:
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
+    async def get_by_character(self, *, character_id: UUID) -> CharacterMemory | None:
+        stmt: Select = select(CharacterMemory).where(CharacterMemory.character_id == character_id)
+        result = await self.session.execute(stmt)
+        return result.scalars().first()
+
     async def list_by_character(self, character_id: UUID) -> list[CharacterMemory]:
         """Return all memories for a given character."""
         stmt: Select = select(CharacterMemory).where(CharacterMemory.character_id == character_id)
