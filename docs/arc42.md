@@ -248,7 +248,7 @@ backend que coordinan análisis y generación. El usuario proporciona la
 imagen y las decisiones cromáticas; los modelos proponen detecciones y
 producen resultados.
 
-``` mermaid
+```mermaid
 flowchart LR
     U[Usuario] -->|Carga página / edita paleta| UI[Frontend web]
     UI <-->|REST / WebSocket| API[Backend API]
@@ -354,7 +354,7 @@ casos de uso.
 
 ## 4.3 Flujo principal
 
-``` mermaid
+```mermaid
 flowchart TD
     A[Usuario carga página] --> B[Validar archivo y crear Page]
     B --> C[Encolar análisis]
@@ -374,7 +374,7 @@ flowchart TD
     N --> O[Generar imagen condicionada]
     O --> P[Refinamiento y reconstrucción]
     P --> Q[Guardar resultado y métricas]
-    Q --> R[Mostrar / descargar]
+    Q --> R[Mostrar / descarga]
 ```
 
 ------------------------------------------------------------------------
@@ -383,7 +383,7 @@ flowchart TD
 
 ## 5.1 Nivel 1: contenedores lógicos
 
-``` mermaid
+```mermaid
 flowchart TB
     subgraph Client["Cliente local"]
       FE[Frontend React + TypeScript]
@@ -613,7 +613,7 @@ almacenamiento, no mediante rutas absolutas asumidas por el modelo.
 
 ## 6.2 Secuencia: análisis de página
 
-``` mermaid
+```mermaid
 sequenceDiagram
     actor U as Usuario
     participant FE as Frontend
@@ -643,7 +643,7 @@ sequenceDiagram
 
 ## 6.3 Secuencia: aprobación y colorización
 
-``` mermaid
+```mermaid
 sequenceDiagram
     actor U as Usuario
     participant FE as Frontend
@@ -679,7 +679,7 @@ sequenceDiagram
 
 Los estados de análisis y de colorización se mantienen separados.
 
-``` mermaid
+```mermaid
 stateDiagram-v2
     [*] --> UPLOADED
     UPLOADED --> ANALYSIS_PENDING
@@ -693,7 +693,7 @@ stateDiagram-v2
     APPROVED --> [*]
 ```
 
-``` mermaid
+```mermaid
 stateDiagram-v2
     [*] --> PENDING
     PENDING --> PREPROCESSING
@@ -729,7 +729,7 @@ públicos expuestos al frontend.
 
 ## 7.1 Despliegue local inicial
 
-``` mermaid
+```mermaid
 flowchart TB
     subgraph Host["Equipo del usuario"]
       Browser["Navegador<br/>localhost:5173"]
