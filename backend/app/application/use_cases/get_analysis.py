@@ -4,6 +4,7 @@ Returns an analysis with its panels, characters, appearances and masks,
 or raises NotFoundError when missing. Depends on repository ports,
 never on concrete ORM models.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -215,7 +216,9 @@ class GetAnalysisUseCase:
 
                 character_id = appearance_entity.character_id
                 if character_id not in characters_by_id:
-                    character_entity = await self._character_repository.get(character_id=character_id)
+                    character_entity = await self._character_repository.get(
+                        character_id=character_id
+                    )
                     if character_entity is not None:
                         characters_by_id[character_id] = CharacterOutput(
                             id=str(character_entity.id),
@@ -267,7 +270,5 @@ class GetAnalysisUseCase:
         except NotFoundError:
             raise
         except Exception as exc:  # pragma: no cover - infra failure path
-            logger.exception(
-                "Error al obtener análisis %s: %s", input_data.analysis_id, exc
-            )
+            logger.exception("Error al obtener análisis %s: %s", input_data.analysis_id, exc)
             raise

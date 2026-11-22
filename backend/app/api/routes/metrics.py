@@ -6,18 +6,16 @@ dashboard to show real progress instead of a product description.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
-
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Any, Dict
 
 from app.core.exceptions import AppError
 from app.core.logging import get_logger
-from app.infrastructure.storage.service import public_preview_url
 from app.infrastructure.database.session import get_session
+from app.infrastructure.storage.service import public_preview_url
 from app.modules.colorization.repositories import ColorizationJobRepository
-from app.modules.projects.models import Project
 from app.modules.projects.repositories import ProjectRepository
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = get_logger(__name__)
 
@@ -49,9 +47,7 @@ async def get_metrics(
         for j in jobs:
             jobs_by_status[j.estado] = jobs_by_status.get(j.estado, 0) + 1
 
-        active_jobs = sum(
-            v for k, v in jobs_by_status.items() if k not in _JOB_TERMINAL
-        )
+        active_jobs = sum(v for k, v in jobs_by_status.items() if k not in _JOB_TERMINAL)
         completed_jobs = jobs_by_status.get("completed", 0)
         failed_jobs = jobs_by_status.get("failed", 0) + jobs_by_status.get("error", 0)
 

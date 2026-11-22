@@ -32,7 +32,9 @@ class UserRepository:
         return int(result.scalar_one())
 
     async def create(self, *, email: str, hashed_password: str, is_admin: bool = False) -> User:
-        user = User(email=normalize_email(email), hashed_password=hashed_password, is_admin=is_admin)
+        user = User(
+            email=normalize_email(email), hashed_password=hashed_password, is_admin=is_admin
+        )
         self.session.add(user)
         await self.session.commit()
         await self.session.refresh(user)

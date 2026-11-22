@@ -5,16 +5,12 @@ Endpoints:
 * GET    /api/v1/colorizations/{job_id} — fetch job status and result
 * GET    /api/v1/colorizations/{job_id}/result — serve the colorized image
 """
+
 from __future__ import annotations
 
 import asyncio
 from typing import Any
 from uuid import UUID
-
-from fastapi import APIRouter, Depends, HTTPException, Path, status
-from fastapi.responses import FileResponse
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import AppError
 from app.core.logging import get_logger
@@ -22,8 +18,11 @@ from app.infrastructure.database.session import get_session
 from app.modules.colorization.repositories import ColorizationJobRepository
 from app.modules.model_registry.repositories import ModelManifestRepository
 from app.modules.page_analysis.models import Analysis
-from app.modules.projects.models import Page
 from app.workers.celery_app import celery_app
+from fastapi import APIRouter, Depends, HTTPException, Path, status
+from fastapi.responses import FileResponse
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = get_logger(__name__)
 
@@ -49,9 +48,7 @@ async def create_colorization(
 
     # Resolve analysis and verify approval.
     try:
-        result = await session.execute(
-            select(Analysis).where(Analysis.id == analysis_uuid)
-        )
+        result = await session.execute(select(Analysis).where(Analysis.id == analysis_uuid))
         analysis = result.scalar_one_or_none()
         if analysis is None:
             logger.warning("Análisis no encontrado: %s", analysis_id)
@@ -92,23 +89,44 @@ async def create_colorization(
 
         manifest_repo = ModelManifestRepository(session)
         manifests = await manifest_repo.list()
-        active = [m for m in manifests if m.is_active and (m.familia or "").strip().lower() in {"colorizacion", "colorización", "colorization"}]
+        active = [
+            m
+            for m in manifests
+            if m.is_active
+            and (m.familia or "").strip().lower()
+            in {"colorizacion", "colorización", "colorization"}
+        ]
         if not active:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail={
-                "code": "no_active_colorization_model",
-                "message": "No hay modelos activos para colorización. Registra o activa uno en Model Registry.",
-            })
-        selected = next((m for m in active if m.id == model_id), None) if model_id else next((m for m in active if m.is_default), active[0])
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "code": "no_active_colorization_model",
+                    "message": "No hay modelos activos para colorización. Registra o activa uno en Model Registry.",
+                },
+            )
+        selected = (
+            next((m for m in active if m.id == model_id), None)
+            if model_id
+            else next((m for m in active if m.is_default), active[0])
+        )
         if selected is None:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail={
-                "code": "model_not_active",
-                "message": "El modelo seleccionado no está activo o no pertenece a colorización.",
-            })
-        if selected.formato not in {"pt", "onnx"} or not (selected.capacidades or {}).get("ruta_archivo"):
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail={
-                "code": "model_format_not_supported_by_pipeline",
-                "message": "El pipeline de inferencia admite modelos PyTorch (.pt) y ONNX (.onnx) registrados.",
-            })
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "code": "model_not_active",
+                    "message": "El modelo seleccionado no está activo o no pertenece a colorización.",
+                },
+            )
+        if selected.formato not in {"pt", "onnx"} or not (selected.capacidades or {}).get(
+            "ruta_archivo"
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "code": "model_format_not_supported_by_pipeline",
+                    "message": "El pipeline de inferencia admite modelos PyTorch (.pt) y ONNX (.onnx) registrados.",
+                },
+            )
         job = await job_repo.create(
             analysis_id=UUID(analysis_id),
             estado="pending",
@@ -136,7 +154,9 @@ async def create_colorization(
         except Exception as exc:
             logger.exception("No se pudo encolar el trabajo %s: %s", job.id, exc)
             await job_repo.update(
-                job.id, estado="failed", mensaje="No se pudo encolar el trabajo (broker no disponible)."
+                job.id,
+                estado="failed",
+                mensaje="No se pudo encolar el trabajo (broker no disponible).",
             )
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -146,9 +166,7 @@ async def create_colorization(
                 },
             )
 
-        logger.info(
-            "Trabajo de colorización creado: %s (análisis: %s)", job.id, analysis_id
-        )
+        logger.info("Trabajo de colorización creado: %s (análisis: %s)", job.id, analysis_id)
         return {
             "job_id": str(job.id),
             "analysis_id": analysis_id,

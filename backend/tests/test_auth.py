@@ -11,10 +11,6 @@ from datetime import timedelta
 
 import jwt
 import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.pool import StaticPool
-
 from app.api.routes import auth as auth_routes
 from app.core import security
 from app.core.config import get_settings
@@ -22,6 +18,9 @@ from app.infrastructure.database.base import Base
 from app.infrastructure.database.session import get_session
 from app.main import app
 from app.modules.users.repositories import UserRepository
+from fastapi.testclient import TestClient
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import StaticPool
 
 PASSWORD = "correct-horse-battery"
 PUBLIC_ROUTES = {("GET", "/health"), ("POST", "/api/v1/auth/token")}
@@ -73,7 +72,9 @@ def db():
     app.dependency_overrides.clear()
 
 
-def make_user(client: TestClient, email="user@example.com", password=PASSWORD, admin=False, active=True):
+def make_user(
+    client: TestClient, email="user@example.com", password=PASSWORD, admin=False, active=True
+):
     async def _create():
         async with client._factory() as session:  # type: ignore[attr-defined]
             user = await UserRepository(session).create(
@@ -137,7 +138,9 @@ def test_tampered_token_rejected():
 
 
 def test_alg_none_token_rejected():
-    forged = jwt.encode({"sub": "abc", "type": "access", "iat": 1, "exp": 9999999999}, key="", algorithm="none")
+    forged = jwt.encode(
+        {"sub": "abc", "type": "access", "iat": 1, "exp": 9999999999}, key="", algorithm="none"
+    )
     with pytest.raises(security.TokenError):
         security.decode_access_token(forged)
 

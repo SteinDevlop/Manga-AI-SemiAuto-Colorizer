@@ -4,28 +4,28 @@ Endpoints:
 * GET    /api/v1/projects  — list projects
 * POST   /api/v1/projects  — create a new project
 """
+
 from __future__ import annotations
 
 from typing import Any, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import desc, func, select
-from sqlalchemy.ext.asyncio import AsyncSession
-
+from app.api.deps import get_current_admin
 from app.application.use_cases.create_project import (
     CreateProjectInput,
     CreateProjectUseCase,
 )
-from app.api.deps import get_current_admin
 from app.core.exceptions import AppError
 from app.core.logging import get_logger
-from app.infrastructure.storage.service import public_preview_url
 from app.infrastructure.database.session import get_session
+from app.infrastructure.storage.service import public_preview_url
 from app.modules.page_analysis.models import Analysis
-from app.modules.page_analysis.repositories import AnalysisRepository, PageRepository
+from app.modules.page_analysis.repositories import PageRepository
 from app.modules.projects.models import Project
 from app.modules.projects.repositories import ProjectRepository
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import desc, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = get_logger(__name__)
 
@@ -51,7 +51,7 @@ async def list_projects(
 ) -> List[dict[str, Any]]:
     """List projects with pagination and optional status/stage filters."""
     try:
-        repo = ProjectRepository(session)
+        ProjectRepository(session)
         stmt = select(Project).order_by(desc(Project.created_at))
         if estado:
             stmt = stmt.where(Project.status == estado)
@@ -210,7 +210,11 @@ async def get_project(
         )
 
 
-@router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(get_current_admin)])
+@router.delete(
+    "/{project_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(get_current_admin)],
+)
 async def delete_project(
     project_id: str,
     session: AsyncSession = Depends(get_session),
@@ -312,7 +316,7 @@ async def transition_stage(
             # Si se completa la etapa actual, avanzar a la siguiente pendiente.
             new_current = project.current_stage
             if stage == project.current_stage:
-                following = [s for s in _STAGE_ORDER[current_idx + 1:] if s not in progress]
+                following = [s for s in _STAGE_ORDER[current_idx + 1 :] if s not in progress]
                 new_current = following[0] if following else project.current_stage
             # Si se completó todo, marcar como completado.
             if all(s in progress for s in _STAGE_ORDER):

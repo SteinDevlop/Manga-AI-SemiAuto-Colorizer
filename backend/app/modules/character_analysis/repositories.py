@@ -106,7 +106,9 @@ class CharacterAppearanceRepository:
     async def list_by_character(self, *, character_id: UUID) -> list[CharacterAppearance]:
         stmt: Select = (
             select(CharacterAppearance)
-            .options(selectinload(CharacterAppearance.page), selectinload(CharacterAppearance.panel))
+            .options(
+                selectinload(CharacterAppearance.page), selectinload(CharacterAppearance.panel)
+            )
             .where(CharacterAppearance.character_id == character_id)
             .order_by(CharacterAppearance.created_at)
         )

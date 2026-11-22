@@ -4,15 +4,14 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.core.config import get_settings
 from app.core.security import TokenError, decode_access_token
 from app.infrastructure.database.session import get_session
 from app.modules.users.models import User
 from app.modules.users.repositories import UserRepository
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.ext.asyncio import AsyncSession
 
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl=f"{get_settings().API_V1_STR}/auth/token",

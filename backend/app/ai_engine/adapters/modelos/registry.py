@@ -7,7 +7,7 @@ sin tocar el resto del sistema.
 
 from __future__ import annotations
 
-from typing import Any, Type
+from typing import Type
 
 from .protocol import ModelAdapterProtocol
 

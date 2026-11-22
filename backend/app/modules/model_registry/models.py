@@ -44,15 +44,9 @@ class ModelManifest(Base):
     licencia: Mapped[str | None] = mapped_column(String, nullable=True)
     fuente: Mapped[str | None] = mapped_column(String, nullable=True)
     capacidades: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
-    requisitos_hardware: Mapped[dict[str, Any] | None] = mapped_column(
-        JSON, nullable=True
-    )
-    estado: Mapped[str] = mapped_column(
-        String, nullable=False, server_default="disponible"
-    )
-    parametros_soportados: Mapped[dict[str, Any] | None] = mapped_column(
-        JSON, nullable=True
-    )
+    requisitos_hardware: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    estado: Mapped[str] = mapped_column(String, nullable=False, server_default="disponible")
+    parametros_soportados: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
 
     # ------------------------------------------------------------------
     # Propiedades de conveniencia para campos de S12 sin columna propia

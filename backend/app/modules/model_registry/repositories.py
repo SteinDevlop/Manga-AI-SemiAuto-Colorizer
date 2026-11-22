@@ -52,9 +52,7 @@ class ModelManifestRepository:
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def update(
-        self, *, manifest_id: UUID, **kwargs: Any
-    ) -> ModelManifest | None:
+    async def update(self, *, manifest_id: UUID, **kwargs: Any) -> ModelManifest | None:
         """Actualiza los atributos del manifiesto con el id dado."""
         manifest = await self.get(manifest_id=manifest_id)
         if manifest is None:
@@ -93,9 +91,13 @@ class ModelManifestRepository:
         manifest = await self.get(manifest_id=manifest_id)
         if manifest is None:
             return False
-        stmt = select(ColorizationJob.id).where(
-            ColorizationJob.version_modelo == manifest.version,
-            ColorizationJob.estado.in_(_NON_TERMINAL_STATES),
-        ).limit(1)
+        stmt = (
+            select(ColorizationJob.id)
+            .where(
+                ColorizationJob.version_modelo == manifest.version,
+                ColorizationJob.estado.in_(_NON_TERMINAL_STATES),
+            )
+            .limit(1)
+        )
         result = await self.session.execute(stmt)
         return result.first() is not None

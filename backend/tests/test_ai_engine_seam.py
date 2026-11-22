@@ -6,6 +6,7 @@ adapters still work as fallback.
 """
 
 import os
+
 import pytest
 from app.ai_engine.adapters.real import (
     ModelUnavailableError,

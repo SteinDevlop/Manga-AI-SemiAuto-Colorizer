@@ -15,6 +15,7 @@ when a job is already in a terminal state the task returns without
 regenerating artifacts. Heavy inference is intentionally not executed here
 (a real GPU adapter is pending for P8).
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -31,10 +32,6 @@ from app.core.exceptions import AppError, ConflictError, InternalError, NotFound
 from app.core.logging import get_logger
 from app.infrastructure.database.session import async_session_factory as async_session
 from app.infrastructure.storage.service import StorageService
-from app.modules.assets.models import Artifact
-from app.modules.assets.repositories import ArtifactRepository
-from app.modules.character_analysis.models import CharacterAppearance
-from app.modules.colorization.models import MaskArtifact
 from app.modules.colorization.repositories import ColorizationJobRepository
 from app.modules.colorization.states import is_terminal, is_valid_transition
 from app.modules.page_analysis.models import Analysis
@@ -118,14 +115,25 @@ async def _fetch_job(job_id: str) -> Any:
 async def _fetch_colorization_model(model_id: str) -> Any:
     """Resolve an active colorization manifest selected when the job was created."""
     from app.modules.model_registry.repositories import ModelManifestRepository
+
     async with async_session() as session:
         manifest = await ModelManifestRepository(session).get(manifest_id=UUID(model_id))
         if manifest is None or not manifest.is_active:
             raise NotFoundError(message="El modelo seleccionado ya no existe o está inactivo.")
-        if (manifest.familia or "").strip().lower() not in {"colorizacion", "colorización", "colorization"}:
-            raise ConflictError(message="El modelo seleccionado no pertenece a la tarea de colorización.")
-        if manifest.formato not in {"pt", "onnx"} or not (manifest.capacidades or {}).get("ruta_archivo"):
-            raise ConflictError(message="El pipeline de colorización requiere un modelo local (.pt o .onnx) registrado.")
+        if (manifest.familia or "").strip().lower() not in {
+            "colorizacion",
+            "colorización",
+            "colorization",
+        }:
+            raise ConflictError(
+                message="El modelo seleccionado no pertenece a la tarea de colorización."
+            )
+        if manifest.formato not in {"pt", "onnx"} or not (manifest.capacidades or {}).get(
+            "ruta_archivo"
+        ):
+            raise ConflictError(
+                message="El pipeline de colorización requiere un modelo local (.pt o .onnx) registrado."
+            )
         return {
             "path": manifest.capacidades["ruta_archivo"],
             "version": manifest.version,
@@ -191,9 +199,7 @@ def _simulate_stage(duration_seconds: int) -> None:
 async def _resolve_image_path(analysis_id: str) -> str:
     """Resolve the original page image path from the linked analysis."""
     async with async_session() as session:
-        analysis_result = await session.execute(
-            select(Analysis).where(Analysis.id == analysis_id)
-        )
+        analysis_result = await session.execute(select(Analysis).where(Analysis.id == analysis_id))
         analysis_row = analysis_result.scalar_one_or_none()
         if analysis_row is None:
             raise NotFoundError(
@@ -202,9 +208,7 @@ async def _resolve_image_path(analysis_id: str) -> str:
             )
         page_id = analysis_row.page_id
 
-        page_result = await session.execute(
-            select(Page).where(Page.id == page_id)
-        )
+        page_result = await session.execute(select(Page).where(Page.id == page_id))
         page_row = page_result.scalar_one_or_none()
         if page_row is None:
             raise NotFoundError(
@@ -461,7 +465,9 @@ def colorize_page(
 
     # Resolve the exact registry model chosen by the user; never silently fall back.
     if not model_id:
-        raise ConflictError(message="No se indicó un modelo del Model Registry para esta colorización.")
+        raise ConflictError(
+            message="No se indicó un modelo del Model Registry para esta colorización."
+        )
     try:
         selected_model = _run_async(_fetch_colorization_model(model_id))
     except Exception as exc:

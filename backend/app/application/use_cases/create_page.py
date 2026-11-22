@@ -4,6 +4,7 @@ Creates a page after validating the referenced project exists and the
 page hash is not duplicated. Depends on repository ports, never on
 concrete ORM models.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -99,18 +100,16 @@ class CreatePageUseCase:
         """
         try:
             if not await self._project_repository.exists(project_id=input_data.project_id):
-                logger.warning(
-                    "Proyecto no encontrado para la página: %s", input_data.project_id
-                )
+                logger.warning("Proyecto no encontrado para la página: %s", input_data.project_id)
                 raise NotFoundError(
                     message="Referenced project not found.",
                     details={"field": "project_id", "reason": "not_found"},
                 )
 
-            if not input_data.allow_duplicate_hash and await self._page_repository.exists_by_hash(hash_sha256=input_data.hash_sha256):
-                logger.warning(
-                    "Hash de página duplicado: %s", input_data.hash_sha256
-                )
+            if not input_data.allow_duplicate_hash and await self._page_repository.exists_by_hash(
+                hash_sha256=input_data.hash_sha256
+            ):
+                logger.warning("Hash de página duplicado: %s", input_data.hash_sha256)
                 raise ConflictError(
                     message="A page with this hash already exists.",
                     details={"field": "hash_sha256", "reason": "duplicate_hash"},

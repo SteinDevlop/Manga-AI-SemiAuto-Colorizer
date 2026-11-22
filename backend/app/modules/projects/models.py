@@ -11,7 +11,7 @@ from __future__ import annotations
 import uuid
 
 from app.infrastructure.database.base import Base
-from sqlalchemy import BigInteger, ForeignKey, Integer, JSON, String, Text
+from sqlalchemy import JSON, BigInteger, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
@@ -26,15 +26,9 @@ class Project(Base):
 
     nombre: Mapped[str] = mapped_column(String, nullable=False)
     descripcion: Mapped[str | None] = mapped_column(Text, nullable=True)
-    current_stage: Mapped[str] = mapped_column(
-        String, nullable=False, default="upload"
-    )
-    status: Mapped[str] = mapped_column(
-        String, nullable=False, default="en_progreso"
-    )
-    stage_progress: Mapped[list[str]] = mapped_column(
-        JSON, nullable=False, default=list
-    )
+    current_stage: Mapped[str] = mapped_column(String, nullable=False, default="upload")
+    status: Mapped[str] = mapped_column(String, nullable=False, default="en_progreso")
+    stage_progress: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
     cover_image: Mapped[str | None] = mapped_column(String, nullable=True)
 
     pages: Mapped[list["Page"]] = relationship(

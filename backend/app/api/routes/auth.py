@@ -10,11 +10,6 @@ from __future__ import annotations
 import time
 from collections import defaultdict, deque
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from fastapi.security import OAuth2PasswordRequestForm
-from pydantic import BaseModel, Field
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.api.deps import get_current_user
 from app.core.config import get_settings
 from app.core.logging import get_logger
@@ -27,6 +22,10 @@ from app.core.security import (
 from app.infrastructure.database.session import get_session
 from app.modules.users.models import User
 from app.modules.users.repositories import UserRepository, normalize_email
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.security import OAuth2PasswordRequestForm
+from pydantic import BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = get_logger(__name__)
 
@@ -75,7 +74,10 @@ def _check_throttle(key: str) -> None:
         retry_after = max(1, int(_WINDOW_SECONDS - (now - attempts[0])))
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail={"code": "too_many_attempts", "message": "Demasiados intentos fallidos. Inténtalo más tarde."},
+            detail={
+                "code": "too_many_attempts",
+                "message": "Demasiados intentos fallidos. Inténtalo más tarde.",
+            },
             headers={"Retry-After": str(retry_after)},
         )
 
@@ -135,6 +137,9 @@ async def change_password(
     if not verify_password(body.current_password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "invalid_credentials", "message": "La contraseña actual no es correcta"},
+            detail={
+                "code": "invalid_credentials",
+                "message": "La contraseña actual no es correcta",
+            },
         )
     await UserRepository(session).update_password(user, get_password_hash(body.new_password))

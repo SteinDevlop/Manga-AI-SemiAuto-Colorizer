@@ -75,15 +75,18 @@ class Settings(BaseSettings):
         local; en producción la API no debe iniciar con claves de ejemplo.
         """
         problems: list[str] = []
-        if self.SECRET_KEY in _INSECURE_SECRET_KEYS or len(self.SECRET_KEY) < _MIN_SECRET_KEY_LENGTH:
+        if (
+            self.SECRET_KEY in _INSECURE_SECRET_KEYS
+            or len(self.SECRET_KEY) < _MIN_SECRET_KEY_LENGTH
+        ):
             problems.append(
                 f"SECRET_KEY debe definirse con al menos {_MIN_SECRET_KEY_LENGTH} caracteres "
-                "aleatorios (ej.: python -c \"import secrets; print(secrets.token_urlsafe(48))\")"
+                'aleatorios (ej.: python -c "import secrets; print(secrets.token_urlsafe(48))")'
             )
         if not self.ENCRYPTION_KEY:
             problems.append(
-                "ENCRYPTION_KEY debe definirse (Fernet; ej.: python -c \"from "
-                "cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\"). "
+                'ENCRYPTION_KEY debe definirse (Fernet; ej.: python -c "from '
+                'cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"). '
                 "Sin ella las claves de API de modelos se cifran con una clave derivada pública."
             )
         if self.ALGORITHM not in {"HS256", "HS384", "HS512"}:
@@ -94,7 +97,9 @@ class Settings(BaseSettings):
                     "Configuración insegura para ENVIRONMENT=production: " + "; ".join(problems)
                 )
             for problem in problems:
-                _log.warning("Configuración insegura (solo permitida fuera de producción): %s", problem)
+                _log.warning(
+                    "Configuración insegura (solo permitida fuera de producción): %s", problem
+                )
         return self
 
 
@@ -111,10 +116,11 @@ def get_fernet():
     configurada, se genera una clave derivativa determinista para desarrollo;
     nunca se usa para producción sin configurar la variable de entorno.
     """
+    import base64
+
     from cryptography.fernet import Fernet
     from cryptography.hazmat.primitives import hashes
     from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-    import base64
 
     settings = get_settings()
     raw = settings.ENCRYPTION_KEY

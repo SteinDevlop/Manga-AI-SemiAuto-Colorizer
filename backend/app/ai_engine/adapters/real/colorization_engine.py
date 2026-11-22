@@ -12,15 +12,16 @@ environment variable, falling back to
 root. Results are written to ``artifacts/results/`` (metadata only -- no
 binary images in PostgreSQL).
 """
+
 from __future__ import annotations
 
 import json
-import math
 import os
 import sys
 import time
 from datetime import datetime
-from typing import Dict, Tuple, List, Optional
+from typing import Dict, Optional
+
 
 def _find_repo_root(start: str) -> str:
     """Sube directorios hasta encontrar el marcador del repo (.git)."""
@@ -36,9 +37,7 @@ def _find_repo_root(start: str) -> str:
     return os.path.dirname(
         os.path.dirname(
             os.path.dirname(
-                os.path.dirname(
-                    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                )
+                os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
             )
         )
     )
@@ -55,6 +54,7 @@ try:
     import cv2  # noqa: F401
     import numpy as np  # noqa: F401
     import torch  # noqa: F401
+
     _HEAVY_DEPS_AVAILABLE = True
 except Exception:  # pragma: no cover - optional heavy deps
     _HEAVY_DEPS_AVAILABLE = False
@@ -62,6 +62,7 @@ except Exception:  # pragma: no cover - optional heavy deps
 
 try:
     import onnxruntime as ort  # noqa: F401
+
     _ORT_AVAILABLE = True
 except Exception:  # pragma: no cover - optional heavy dep
     _ORT_AVAILABLE = False
@@ -75,6 +76,7 @@ try:  # pragma: no cover - optional ML code
     ml_path = os.path.join(REPO_ROOT, "ml")
     sys.path.insert(0, ml_path)
     from models.unet.unet import SmallUNet  # noqa: F401
+
     _ML_MODEL_AVAILABLE = True
     logger.info("ML model code cargado desde: %s", ml_path)
 except Exception as exc:  # pragma: no cover - optional ML code
@@ -89,9 +91,7 @@ except Exception as exc:  # pragma: no cover - optional ML code
 from app.ai_engine.adapters.real import ModelUnavailableError  # noqa: E402
 from app.ai_engine.contracts import ColorizationEngine  # noqa: E402
 
-DEFAULT_CHECKPOINT_REL = os.path.join(
-    "artifacts", "checkpoints", "sumi_unet_cpu_v1", "best.pt"
-)
+DEFAULT_CHECKPOINT_REL = os.path.join("artifacts", "checkpoints", "sumi_unet_cpu_v1", "best.pt")
 DEFAULT_RESULTS_DIR = os.path.join("artifacts", "results")
 
 
@@ -152,7 +152,7 @@ def _predict_full(
 ) -> np.ndarray:
     inp_gray = _read_gray(image_path)
     h, w = inp_gray.shape
-    inp_f = (inp_gray.astype(np.float32) / 255.0)
+    inp_f = inp_gray.astype(np.float32) / 255.0
 
     out_acc = np.zeros((h, w, 3), dtype=np.float32)
     w_acc = np.zeros((h, w, 3), dtype=np.float32)
@@ -176,12 +176,7 @@ def _predict_full(
                     padded = np.zeros((tile_size, tile_size), dtype=np.float32)
                     padded[:th, :tw] = tile
                     tile = padded
-                t = (
-                    torch.from_numpy(tile)
-                    .unsqueeze(0)
-                    .unsqueeze(0)
-                    .to(device)
-                )
+                t = torch.from_numpy(tile).unsqueeze(0).unsqueeze(0).to(device)
                 pred = model(t)
                 pred_np = pred.squeeze(0).permute(1, 2, 0).cpu().numpy()
                 if th < tile_size or tw < tile_size:
@@ -244,7 +239,9 @@ def _build_onnx_input(
     # Determinar qué tipo de modelo es basado en input_names
     input_names_set = set(input_names or [])
     is_sketch_hints = "sketch_and_hints" in input_names_set
-    is_v6_generator = any(n in input_names_set for n in ("L_bw", "sam_level0", "sam_level1", "wd14_embedding"))
+    is_v6_generator = any(
+        n in input_names_set for n in ("L_bw", "sam_level0", "sam_level1", "wd14_embedding")
+    )
 
     # Si no se especificó input_names, asumir v6_generator (comportamiento por defecto)
     if not input_names_set:
@@ -272,7 +269,11 @@ def _build_onnx_input(
         if wd14_embedding is not None:
             wd14 = np.asarray(wd14_embedding, dtype=np.float32).flatten()
             if wd14.size >= 2:
-                channels[3] = wd14[: h * w].reshape(h, w) if wd14.size >= h * w else np.resize(wd14[:2], (h, w))
+                channels[3] = (
+                    wd14[: h * w].reshape(h, w)
+                    if wd14.size >= h * w
+                    else np.resize(wd14[:2], (h, w))
+                )
                 channels[4] = wd14[1:2] if wd14.size > 1 else np.zeros((h, w), dtype=np.float32)
             elif wd14.size == 1:
                 channels[3] = np.full((h, w), wd14[0], dtype=np.float32)
@@ -354,8 +355,7 @@ def _predict_full_onnx(
 
     # Determinar tipo de modelo basado en las claves de inputs
     input_names = list(inputs.keys())
-    is_sketch_hints = "sketch_and_hints" in input_names
-    is_v6_generator = any(n in input_names for n in ("L_bw", "sam_level0", "sam_level1", "wd14_embedding"))
+    any(n in input_names for n in ("L_bw", "sam_level0", "sam_level1", "wd14_embedding"))
 
     # Ajustar dimensiones a múltiplos de 32 para evitar errores de concat interna
     # en skip connections del U-Net (dimensiones incompatibles tras downsampling)

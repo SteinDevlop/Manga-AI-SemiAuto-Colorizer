@@ -10,9 +10,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.core.logging import get_logger
 from app.ai_engine.adapters.modelos.protocol import ModelAdapterProtocol
 from app.ai_engine.adapters.modelos.registry import register_adapter
+from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -54,9 +54,7 @@ class ApiModelAdapter(ModelAdapterProtocol):
         if not self._base_url:
             raise ValueError("base_url es obligatorio para modelos API.")
         if self._auth_method in ("bearer", "apikey") and not self._api_key:
-            raise ValueError(
-                f"api_key es obligatorio con auth_method='{self._auth_method}'."
-            )
+            raise ValueError(f"api_key es obligatorio con auth_method='{self._auth_method}'.")
 
     async def load(self) -> None:
         """Las APIs externas no requieren carga en memoria."""
@@ -80,19 +78,15 @@ class ApiModelAdapter(ModelAdapterProtocol):
             payload.setdefault("modelo", self._modelo)
 
         last_error: str | None = None
-        for attempt in range(self._retries + 1):
+        for _attempt in range(self._retries + 1):
             try:
-                response = requests.post(
-                    url, json=payload, headers=headers, timeout=self._timeout
-                )
+                response = requests.post(url, json=payload, headers=headers, timeout=self._timeout)
                 response.raise_for_status()
                 return {
                     "model_id": self._model_id,
                     "formato": self.formato,
                     "outputs": response.json()
-                    if response.headers.get("content-type", "").startswith(
-                        "application/json"
-                    )
+                    if response.headers.get("content-type", "").startswith("application/json")
                     else {"texto": response.text},
                 }
             except Exception as exc:  # noqa: BLE001
@@ -117,8 +111,10 @@ class ApiModelAdapter(ModelAdapterProtocol):
 
         try:
             response = requests.post(
-                url, json={"health_check": True, "modelo": self._modelo},
-                headers=headers, timeout=self._timeout,
+                url,
+                json={"health_check": True, "modelo": self._modelo},
+                headers=headers,
+                timeout=self._timeout,
             )
             if response.status_code < 500:
                 return {

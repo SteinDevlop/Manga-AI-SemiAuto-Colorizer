@@ -12,13 +12,12 @@ en la docstring de ``load``.
 
 from __future__ import annotations
 
-import hashlib
 from pathlib import Path
 from typing import Any
 
-from app.core.logging import get_logger
 from app.ai_engine.adapters.modelos.protocol import ModelAdapterProtocol
 from app.ai_engine.adapters.modelos.registry import register_adapter
+from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -73,9 +72,7 @@ class PyTorchModelAdapter(ModelAdapterProtocol):
             ) from exc
 
         try:
-            self._model = torch.load(
-                str(path), map_location="cpu", weights_only=True
-            )
+            self._model = torch.load(str(path), map_location="cpu", weights_only=True)
             self._loaded = True
             logger.info("Modelo PyTorch cargado: %s", path)
         except Exception as exc:  # noqa: BLE001

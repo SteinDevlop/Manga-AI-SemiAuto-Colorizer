@@ -41,7 +41,11 @@ class MaskArtifactRepository:
         return result.scalars().all()
 
     async def list_by_appearance(self, *, appearance_id: UUID) -> list[MaskArtifact]:
-        stmt: Select = select(MaskArtifact).where(MaskArtifact.appearance_id == appearance_id).order_by(MaskArtifact.created_at)
+        stmt: Select = (
+            select(MaskArtifact)
+            .where(MaskArtifact.appearance_id == appearance_id)
+            .order_by(MaskArtifact.created_at)
+        )
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 

@@ -4,6 +4,7 @@ Proporciona un logger con formato JSON consistente para facilitar el
 rastreo de errores y el monitoreo en producción. Todos los módulos deben
 obtener su logger mediante get_logger(__name__).
 """
+
 from __future__ import annotations
 
 import logging

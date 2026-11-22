@@ -18,7 +18,6 @@ from typing import Any
 
 import bcrypt
 import jwt
-
 from app.core.config import get_settings
 
 BCRYPT_ROUNDS = 12

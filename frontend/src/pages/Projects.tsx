@@ -123,8 +123,8 @@ export default function Projects() {
     // Crear modal DOM personalizado
     const modal = document.createElement("div");
     modal.style.position = "fixed";
-    modal.style.top = 0;
-    modal.style.left = 0;
+    modal.style.top = "0px";
+    modal.style.left = "0px";
     modal.style.width = "100%";
     modal.style.height = "100%";
     modal.style.background = "rgba(0,0,0,0.5)";

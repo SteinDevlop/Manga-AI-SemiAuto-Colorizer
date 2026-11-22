@@ -9,9 +9,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from app.core.logging import get_logger
 from app.ai_engine.adapters.modelos.protocol import ModelAdapterProtocol
 from app.ai_engine.adapters.modelos.registry import register_adapter
+from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 

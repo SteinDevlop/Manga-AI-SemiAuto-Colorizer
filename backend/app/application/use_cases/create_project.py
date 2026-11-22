@@ -3,6 +3,7 @@
 Creates a new project with a unique name and optional description.
 Depends on the project repository port, never on concrete ORM models.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -74,9 +75,7 @@ class CreateProjectUseCase:
                 descripcion=input_data.descripcion,
             )
 
-            logger.info(
-                "Proyecto creado exitosamente: %s (%s)", entity.id, entity.nombre
-            )
+            logger.info("Proyecto creado exitosamente: %s (%s)", entity.id, entity.nombre)
             return ProjectOutput(
                 id=str(entity.id),
                 nombre=entity.nombre,

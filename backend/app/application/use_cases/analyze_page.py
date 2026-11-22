@@ -5,6 +5,7 @@ segmentation, and persistence of panels, appearances and mask artifacts,
 updating the analysis state. Depends on ai_engine Protocol adapters,
 never on concrete AI implementations.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -21,9 +22,7 @@ logger = get_logger(__name__)
 class PageRepository(Protocol):
     """Port for page read operations."""
 
-    async def get(
-        self, *, page_id: UUID
-    ) -> object | None:  # pragma: no cover - protocol stub
+    async def get(self, *, page_id: UUID) -> object | None:  # pragma: no cover - protocol stub
         """Return the page with the given ID, or None when not found."""
         ...
 
@@ -295,7 +294,9 @@ class AnalyzePageUseCase:
             all_character_detections: list[dict] = []
 
             for panel_entity in panel_entities:
-                character_detections = self._character_detector.detect(image_path, min_confidence=0.0)
+                character_detections = self._character_detector.detect(
+                    image_path, min_confidence=0.0
+                )
                 all_character_detections.extend(character_detections)
 
                 for detection in character_detections:
@@ -411,7 +412,5 @@ class AnalyzePageUseCase:
         except NotFoundError:
             raise
         except Exception as exc:  # pragma: no cover - infra failure path
-            logger.exception(
-                "Error al analizar página %s: %s", input_data.page_id, exc
-            )
+            logger.exception("Error al analizar página %s: %s", input_data.page_id, exc)
             raise

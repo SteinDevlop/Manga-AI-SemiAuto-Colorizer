@@ -4,6 +4,7 @@ Marks a page analysis as APPROVED after the user has reviewed identities,
 attributes and palettes. Human-in-the-loop: no colorization job can be
 created without a valid approval (ADR-005).
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -82,9 +83,7 @@ class ApproveAnalysisUseCase:
                     details={"field": "analysis_id", "reason": "not_found"},
                 )
 
-            logger.info(
-                "Análisis aprobado: %s (estado: APPROVED)", input_data.analysis_id
-            )
+            logger.info("Análisis aprobado: %s (estado: APPROVED)", input_data.analysis_id)
             return ApproveAnalysisOutput(
                 analysis_id=str(updated.id),
                 estado=str(updated.estado),

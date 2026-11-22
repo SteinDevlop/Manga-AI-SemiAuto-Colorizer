@@ -17,17 +17,11 @@ al frontend (solo enmascaradas).
 from __future__ import annotations
 
 import hashlib
-import json
-import logging
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
-
+from app.ai_engine.adapters.modelos import resolve_adapter
 from app.api.deps import get_current_admin
-from fastapi.responses import Response
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.application.use_cases.get_model import GetModelInput, GetModelUseCase
 from app.application.use_cases.list_models import ListModelsInput, ListModelsUseCase
 from app.application.use_cases.register_model import RegisterModelInput, RegisterModelUseCase
@@ -35,15 +29,15 @@ from app.application.use_cases.update_model_status import (
     UpdateModelStatusInput,
     UpdateModelStatusUseCase,
 )
-from app.ai_engine.adapters.modelos import resolve_adapter
 from app.core.config import get_fernet, get_settings
-from app.core.exceptions import ConflictError, NotFoundError, ValidationError
-from app.core.exceptions import AppError
+from app.core.exceptions import AppError, ConflictError, NotFoundError, ValidationError
 from app.core.logging import get_logger
 from app.infrastructure.database.session import get_session
 from app.infrastructure.storage.service import StorageService
-from app.modules.model_registry.models import ModelManifest
 from app.modules.model_registry.repositories import ModelManifestRepository
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from fastapi.responses import Response
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = get_logger(__name__)
 
@@ -59,6 +53,7 @@ _ALLOWED_FORMATOS = frozenset({"pt", "onnx", "api"})
 # ---------------------------------------------------------------------------
 # Helpers de cifrado y enmascaramiento (S17)
 # ---------------------------------------------------------------------------
+
 
 def _mask_api_key(api_key: str | None) -> str | None:
     """Devuelve una versión enmascarada de la clave (ej. ``sk-…abcd``)."""
@@ -87,9 +82,8 @@ def _decrypt_value(ciphertext: str | None) -> str | None:
 # Helpers de validación de archivo (S14, S15)
 # ---------------------------------------------------------------------------
 
-def _validate_uploaded_file(
-    upload_file: UploadFile, max_bytes: int
-) -> tuple[str, str, str]:
+
+def _validate_uploaded_file(upload_file: UploadFile, max_bytes: int) -> tuple[str, str, str]:
     """Valida extensión, tamaño y checksum de un archivo subido.
 
     Retorna ``(extension, formato, sha256)``. S15: los archivos .pt se
@@ -123,9 +117,7 @@ def _validate_uploaded_file(
     return ext, formato, sha256
 
 
-async def _verificar_adaptador_archivo(
-    *, formato: str, ruta_archivo: str, model_id: str
-) -> None:
+async def _verificar_adaptador_archivo(*, formato: str, ruta_archivo: str, model_id: str) -> None:
     """Verifica que el archivo cargue correctamente mediante el adaptador (S14/S15)."""
     adapter_cls = resolve_adapter(formato)
     adapter = adapter_cls(model_id=model_id, ruta_archivo=ruta_archivo)
@@ -145,6 +137,7 @@ async def _verificar_adaptador_archivo(
 # Endpoints
 # ---------------------------------------------------------------------------
 
+
 @router.get("", response_model=dict[str, Any])
 async def list_models(
     session: AsyncSession = Depends(get_session),
@@ -162,7 +155,10 @@ async def list_models(
         items = [m.to_dict() for m in await repo.list()]
         # Aplicar filtros ligeros en capa de ruta (los casos de uso no filtran).
         if tarea:
-            normalize_task = lambda value: (value or "").strip().lower().replace("ó", "o")
+
+            def normalize_task(value):
+                return (value or "").strip().lower().replace("ó", "o")
+
             requested_task = normalize_task(tarea)
             items = [m for m in items if normalize_task(m["tarea"]) == requested_task]
         if activo is not None:
@@ -189,18 +185,12 @@ async def get_model(
 ) -> dict[str, Any]:
     """Devuelve el detalle de un modelo por su ID."""
     try:
-        use_case = GetModelUseCase(
-            model_manifest_repository=ModelManifestRepository(session)
-        )
+        use_case = GetModelUseCase(model_manifest_repository=ModelManifestRepository(session))
         output = await use_case.execute(GetModelInput(model_id=UUID(model_id)))
     except NotFoundError:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Model not found."
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Model not found.")
     except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="model_id inválido."
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="model_id inválido.")
     except HTTPException:
         raise
     except AppError:
@@ -215,9 +205,7 @@ async def get_model(
     repo = ModelManifestRepository(session)
     manifest = await repo.get(manifest_id=UUID(model_id))
     if manifest is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Model not found."
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Model not found.")
     data = manifest.to_dict()
     # Incluir datos del DTO del caso de uso sin exponer secretos.
     data.update(
@@ -238,7 +226,12 @@ async def get_model(
     return data
 
 
-@router.post("", status_code=status.HTTP_201_CREATED, response_model=dict[str, Any], dependencies=[Depends(get_current_admin)])
+@router.post(
+    "",
+    status_code=status.HTTP_201_CREATED,
+    response_model=dict[str, Any],
+    dependencies=[Depends(get_current_admin)],
+)
 async def register_model(
     session: AsyncSession = Depends(get_session),
     source_type: str = Form(...),
@@ -283,7 +276,6 @@ async def register_model(
         "salud": "no_verificado",
         "is_default": bool(is_default),
     }
-    parametros_soportados: dict[str, Any] | None = None
     hash_pesos: str | None = None
     ruta_archivo: str | None = None
     formato: str | None = None
@@ -364,21 +356,10 @@ async def register_model(
             )
         capacidades["salud"] = "ok"
         # Cifrar clave de API (S17).
-        api_key_enc = _encrypt_value(api_key) if api_key else None
-        parametros_soportados = {
-            "api_key_enc": api_key_enc,
-            "auth_method": auth_method,
-            "base_url": base_url,
-            "endpoint": endpoint,
-            "modelo": modelo,
-            "timeout": timeout,
-            "retries": retries,
-        }
+        _encrypt_value(api_key) if api_key else None
 
     try:
-        use_case = RegisterModelUseCase(
-            model_manifest_repository=ModelManifestRepository(session)
-        )
+        use_case = RegisterModelUseCase(model_manifest_repository=ModelManifestRepository(session))
         output = await use_case.execute(
             RegisterModelInput(
                 nombre=nombre.strip(),
@@ -425,7 +406,9 @@ async def register_model(
     }
 
 
-@router.patch("/{model_id}/status", response_model=dict[str, Any], dependencies=[Depends(get_current_admin)])
+@router.patch(
+    "/{model_id}/status", response_model=dict[str, Any], dependencies=[Depends(get_current_admin)]
+)
 async def update_model_status(
     model_id: str,
     session: AsyncSession = Depends(get_session),
@@ -435,9 +418,7 @@ async def update_model_status(
     repo = ModelManifestRepository(session)
     manifest = await repo.get(manifest_id=UUID(model_id))
     if manifest is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Model not found."
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Model not found.")
 
     # S19: impedir desactivar/eliminar si hay jobs en ejecución.
     if estado == "deshabilitado":
@@ -459,13 +440,9 @@ async def update_model_status(
             UpdateModelStatusInput(model_id=UUID(model_id), estado=estado)
         )
     except NotFoundError:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Model not found."
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Model not found.")
     except ValidationError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=exc.to_dict()
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=exc.to_dict())
     except HTTPException:
         raise
     except AppError:
@@ -509,9 +486,7 @@ async def update_model(
     repo = ModelManifestRepository(session)
     manifest = await repo.get(manifest_id=UUID(model_id))
     if manifest is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Model not found."
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Model not found.")
 
     capacidades = dict(manifest.capacidades or {})
     if nombre is not None:
@@ -553,9 +528,7 @@ async def update_model(
             detail="Error interno al editar el modelo.",
         )
     if updated is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Model not found."
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Model not found.")
 
     return {
         "id": str(updated.id),
@@ -564,9 +537,7 @@ async def update_model(
         "is_default": updated.is_default,
         "api_key": _mask_api_key(_decrypt_value(updated.api_key_enc)),
         "parametros_soportados": {
-            k: v
-            for k, v in (updated.parametros_soportados or {}).items()
-            if k != "api_key_enc"
+            k: v for k, v in (updated.parametros_soportados or {}).items() if k != "api_key_enc"
         },
         "updated_at": updated.updated_at.isoformat() if updated.updated_at else None,
     }
@@ -581,9 +552,7 @@ async def delete_model(
     repo = ModelManifestRepository(session)
     manifest = await repo.get(manifest_id=UUID(model_id))
     if manifest is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Model not found."
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Model not found.")
 
     # S19: impedir eliminar si hay jobs en ejecución.
     en_uso = await repo.tiene_trabajos_en_ejecucion(manifest_id=UUID(model_id))
@@ -597,7 +566,6 @@ async def delete_model(
         )
 
     # Eliminar archivo de almacenamiento asociado si existe.
-    ruta_archivo = None
     try:
         storage = StorageService()
         storage.delete(str(manifest.id), "models")
@@ -607,13 +575,15 @@ async def delete_model(
 
     deleted = await repo.delete(manifest_id=UUID(model_id))
     if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Model not found."
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Model not found.")
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.post("/{model_id}/test-connection", response_model=dict[str, Any], dependencies=[Depends(get_current_admin)])
+@router.post(
+    "/{model_id}/test-connection",
+    response_model=dict[str, Any],
+    dependencies=[Depends(get_current_admin)],
+)
 async def test_connection(
     model_id: str,
     session: AsyncSession = Depends(get_session),
@@ -622,9 +592,7 @@ async def test_connection(
     repo = ModelManifestRepository(session)
     manifest = await repo.get(manifest_id=UUID(model_id))
     if manifest is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Model not found."
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Model not found.")
     if manifest.source_type != "api":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

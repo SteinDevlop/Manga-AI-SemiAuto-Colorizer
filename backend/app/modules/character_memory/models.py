@@ -12,13 +12,12 @@ import uuid
 from typing import Any
 
 from app.infrastructure.database.base import Base
-from sqlalchemy import JSON, ForeignKey, String
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-
 
 # ModelManifest vive en app.modules.model_registry (única definición de la
 # tabla ``model_manifests``); se re-exporta aquí por compatibilidad.
 from app.modules.model_registry.models import ModelManifest  # noqa: E402,F401
+from sqlalchemy import JSON, ForeignKey, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
 class CharacterMemory(Base):

@@ -5,32 +5,35 @@ Endpoints:
 * GET    /api/v1/analysis/{analysis_id} — get analysis result
 * POST   /api/v1/analysis/{analysis_id}/approve — approve analysis for colorization
 """
+
 from __future__ import annotations
 
 from typing import Any
 from uuid import UUID
-
-from fastapi import APIRouter, Depends, HTTPException, Path as PathParam, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai_engine.adapters.mock.character_detector import MockCharacterDetector
 from app.ai_engine.adapters.mock.panel_detector import MockPanelDetector
 from app.ai_engine.adapters.mock.segmenter import MockSegmenter
 from app.application.use_cases.analyze_page import AnalyzePageUseCase
 from app.application.use_cases.approve_analysis import ApproveAnalysisInput, ApproveAnalysisUseCase
-from app.application.use_cases.get_analysis import GetAnalysisInput, GetAnalysisUseCase
-from app.core.exceptions import NotFoundError
-from app.core.exceptions import AppError
+from app.application.use_cases.get_analysis import GetAnalysisUseCase
+from app.core.exceptions import AppError, NotFoundError
 from app.core.logging import get_logger
 from app.infrastructure.database.session import get_session
 from app.infrastructure.storage.service import StorageService
-from app.modules.character_analysis.repositories import CharacterAppearanceRepository, CharacterRepository
+from app.modules.character_analysis.repositories import (
+    CharacterAppearanceRepository,
+    CharacterRepository,
+)
 from app.modules.colorization.repositories import MaskArtifactRepository
 from app.modules.page_analysis.repositories import (
     AnalysisRepository,
     PageRepository,
     PanelRepository,
 )
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import Path as PathParam
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = get_logger(__name__)
 
@@ -252,9 +255,7 @@ async def approve_analysis(
     use_case = ApproveAnalysisUseCase(AnalysisRepository(session))
 
     try:
-        result = await use_case.execute(
-            ApproveAnalysisInput(analysis_id=UUID(analysis_id))
-        )
+        result = await use_case.execute(ApproveAnalysisInput(analysis_id=UUID(analysis_id)))
         logger.info(
             "Análisis aprobado: %s (estado: %s)",
             analysis_id,

@@ -4,30 +4,28 @@ Endpoints:
 * POST   /api/v1/pages  — upload a monochrome manga page for a project
 * GET    /api/v1/pages/{project_id} — list pages of a project
 """
+
 from __future__ import annotations
 
-import hashlib
-import io
 import mimetypes
 import tempfile
 from pathlib import Path
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Path as PathParam, UploadFile, status
-from fastapi.responses import FileResponse
-from PIL import Image
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.application.use_cases.create_page import CreatePageInput, CreatePageUseCase
 from app.core.config import get_settings
-from app.core.exceptions import NotFoundError, ForbiddenError
-from app.core.exceptions import AppError
+from app.core.exceptions import AppError, ForbiddenError, NotFoundError
 from app.core.logging import get_logger
 from app.infrastructure.database.session import get_session
 from app.infrastructure.storage.service import StorageService
 from app.modules.page_analysis.repositories import PageRepository
 from app.modules.projects.repositories import ProjectRepository
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import Path as PathParam
+from fastapi.responses import FileResponse
+from PIL import Image
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = get_logger(__name__)
 
@@ -74,7 +72,9 @@ async def upload_page(
 
     # Save uploaded file to a temporary location for hashing + storage.
     try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=Path(file.filename or "upload").suffix) as tmp:
+        with tempfile.NamedTemporaryFile(
+            delete=False, suffix=Path(file.filename or "upload").suffix
+        ) as tmp:
             tmp.write(await file.read())
             tmp_path = Path(tmp.name)
 
@@ -132,7 +132,8 @@ async def upload_page(
                 # Misma imagen, proyecto diferente: crear una página nueva para este proyecto.
                 logger.warning(
                     "Hash duplicado para proyecto diferente: %s — creando página nueva para %s",
-                    hash_sha256, project_id,
+                    hash_sha256,
+                    project_id,
                 )
                 allow_duplicate_hash = True
 
@@ -159,9 +160,7 @@ async def upload_page(
             )
         )
 
-        logger.info(
-            "Página subida exitosamente: %s (proyecto: %s)", page.id, project_id
-        )
+        logger.info("Página subida exitosamente: %s (proyecto: %s)", page.id, project_id)
 
         # Generar y almacenar una miniatura para usar como portada del proyecto (S2).
         thumbnail_url = None
@@ -182,9 +181,7 @@ async def upload_page(
                 except Exception:
                     pass
                 thumbnail_url = preview["ruta_archivo"]
-                await project_repo.update(
-                    UUID(project_id), cover_image=thumbnail_url
-                )
+                await project_repo.update(UUID(project_id), cover_image=thumbnail_url)
         except AppError:
             raise
         except Exception as exc:  # pragma: no cover - thumbnail is best effort
@@ -267,6 +264,7 @@ async def list_pages(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error interno al listar páginas.",
         )
+
 
 @router.get("/{page_id}/content")
 async def get_page_content(

@@ -83,6 +83,7 @@ def test_character_palette_repository_has_crud_methods():
 
 def test_character_memory_repository_has_memory_lookup():
     from app.modules.character_memory.repositories import CharacterMemoryRepository
+
     assert "get_by_character" in dir(CharacterMemoryRepository)
 
 
@@ -125,6 +126,6 @@ def test_repository_methods_are_async():
     for repo_cls, expected in repos:
         for method_name in expected:
             method = getattr(repo_cls, method_name)
-            assert asyncio.iscoroutinefunction(
-                method
-            ), f"{repo_cls.__name__}.{method_name} must be async"
+            assert asyncio.iscoroutinefunction(method), (
+                f"{repo_cls.__name__}.{method_name} must be async"
+            )

@@ -4,35 +4,39 @@ Configura el logging estructurado, incluye todos los routers de la API y
 expone el endpoint de health check. Toda inicialización está protegida con
 try/except para fail-fast con diagnóstico claro.
 """
+
 from __future__ import annotations
 
 import os
 import uuid
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, HTTPException, Request
-from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
-from starlette.exceptions import HTTPException as StarletteHTTPException
-from fastapi.middleware.cors import CORSMiddleware
-
 from app.api.deps import get_current_user
 from app.api.routes.analysis import router as analysis_router
 from app.api.routes.auth import router as auth_router
-from app.api.routes.colorizations import router as colorizations_router
 from app.api.routes.characters import router as characters_router
+from app.api.routes.colorizations import router as colorizations_router
 from app.api.routes.masks import router as masks_router
 from app.api.routes.metrics import router as metrics_router
 from app.api.routes.models import router as models_router
 from app.api.routes.pages import router as pages_router
 from app.api.routes.projects import router as projects_router
+from app.core.config import get_settings
 from app.core.exceptions import (
-    AppError, ConflictError, ForbiddenError, NotFoundError, UnauthorizedError,
+    AppError,
+    ConflictError,
+    ForbiddenError,
+    NotFoundError,
+    UnauthorizedError,
     ValidationError,
 )
-from app.core.config import get_settings
 from app.core.logging import get_logger
+from fastapi import Depends, FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 logger = get_logger(__name__)
 
@@ -115,18 +119,26 @@ def health() -> dict[str, str]:
 # --- Manejo global de errores: siempre devuelve el envelope
 # {code, message, details, request_id} que espera el frontend. ---
 _STATUS = {
-    NotFoundError: 404, ValidationError: 422, ConflictError: 409,
-    UnauthorizedError: 401, ForbiddenError: 403,
+    NotFoundError: 404,
+    ValidationError: 422,
+    ConflictError: 409,
+    UnauthorizedError: 401,
+    ForbiddenError: 403,
 }
 
 
-def _envelope(request: Request, status_code: int, code: str, message: str,
-              details=None, headers: dict[str, str] | None = None) -> JSONResponse:
+def _envelope(
+    request: Request,
+    status_code: int,
+    code: str,
+    message: str,
+    details=None,
+    headers: dict[str, str] | None = None,
+) -> JSONResponse:
     rid = request.headers.get("x-request-id") or uuid.uuid4().hex
     return JSONResponse(
         status_code=status_code,
-        content={"code": code, "message": message, "details": details,
-                 "request_id": rid},
+        content={"code": code, "message": message, "details": details, "request_id": rid},
         headers={**(headers or {}), "X-Request-ID": rid},
     )
 
@@ -142,20 +154,29 @@ async def _http_error(request: Request, exc: StarletteHTTPException) -> JSONResp
     d = exc.detail
     hdrs = dict(exc.headers) if getattr(exc, "headers", None) else None
     if isinstance(d, dict):
-        return _envelope(request, exc.status_code, str(d.get("code", "http_error")),
-                         str(d.get("message", d)), d.get("details"), hdrs)
+        return _envelope(
+            request,
+            exc.status_code,
+            str(d.get("code", "http_error")),
+            str(d.get("message", d)),
+            d.get("details"),
+            hdrs,
+        )
     return _envelope(request, exc.status_code, "http_error", str(d), None, hdrs)
 
 
 @app.exception_handler(RequestValidationError)
 async def _validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
-    return _envelope(request, 422, "validation_error", "Solicitud inválida",
-                     {"errors": jsonable_errors(exc)})
+    return _envelope(
+        request, 422, "validation_error", "Solicitud inválida", {"errors": jsonable_errors(exc)}
+    )
 
 
 def jsonable_errors(exc: RequestValidationError) -> list:
-    return [{"loc": list(e.get("loc", [])), "msg": e.get("msg"), "type": e.get("type")}
-            for e in exc.errors()]
+    return [
+        {"loc": list(e.get("loc", [])), "msg": e.get("msg"), "type": e.get("type")}
+        for e in exc.errors()
+    ]
 
 
 @app.exception_handler(Exception)
