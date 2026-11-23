@@ -4,12 +4,12 @@ version = "0.1.0"
 description = "Backend FastAPI monolito modular para Manga Colorizer"
 requires-python = ">=3.11"
 dependencies = [
-    "fastapi==0.162.5",
-    "uvicorn==0.35.0",
-    "python-multipart==0.0.30",
-    "pydantic==2.14.3",
+    "fastapi==0.165.0",
+    "uvicorn==0.54.0",
+    "python-multipart==0.0.34",
+    "pydantic==2.14.4",
     "pydantic-settings==2.16.3",
-    "sqlalchemy==2.1.8",
+    "sqlalchemy==2.1.9",
     "alembic==1.20.1",
     "asyncpg==0.32.0",
     "greenlet==3.5.6",
@@ -20,8 +20,8 @@ dependencies = [
     "PyJWT==2.15.1",
     "bcrypt==5.0.0",
     "Pillow==13.0.0",
-    "numpy==2.1.3",
-    "opencv-python-headless==4.10.0.84",
+    "numpy==2.4.6",
+    "opencv-python-headless==5.1.0.95",
     "filetype==1.2.0",
     "requests==2.34.2",
 ]
@@ -31,7 +31,7 @@ dev = [
     "pytest==9.2.0",
     "httpx==0.28.1",
     "aiosqlite==0.22.1",
-    "ruff==0.17.5",
+    "ruff==0.17.6",
     "mypy==2.4.1",
 ]
 # Inferencia de modelos registrados (.pt / .onnx). torch se instala aparte en Docker (índice CPU).
